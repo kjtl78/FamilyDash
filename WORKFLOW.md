@@ -55,7 +55,7 @@ Save the PDF from the school app's share sheet into either synced inbox:
 - **iCloud Drive** → `FamilyHub/Inbox`
 - **Google Drive** → `My Drive/FamilyHub/Inbox`
 
-The Mac watcher (`scripts/school-inbox.mjs`, installed as LaunchAgent `com.familyhub.school-inbox`) detects it, extracts the layout-preserving text into `imports/pending/`, moves the PDF to `Processed/`, and shows a notification. Then say “new school letter” in chat; the import is reviewed and merged with `scripts/import-school.mjs`.
+The Mac watcher (`scripts/school-inbox.mjs`, installed as LaunchAgent `com.familyhub.school-inbox`) detects it, extracts the layout-preserving text into `imports/pending/`, uploads the PDF to the private `SCHOOL` KV namespace, writes its `/api/pdf/...` URL into `imports/pending/<name>.json`, moves the PDF to `Processed/`, and shows a notification. Then say “new school letter” in chat; the import is reviewed and merged with `scripts/import-school.mjs`, with the PDF URL attached as a `docs` entry.
 
 Reinstall or restart the watcher with:
 
