@@ -23,12 +23,12 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 
 ## Current state (update this section on every change)
 - Status: LIVE. GitHub `kjtl78/FamilyDash` (branch `main`, public) is Git-connected to Cloudflare Pages project `familyhub` → https://familyhub-84t.pages.dev. Production deploy `90d9e1b` was live on 2026-11-02; every push to `main` rebuilds and deploys.
-- Family site: https://familydash.pages.dev is protected by Cloudflare Access team `lionfishky`, but it is NOT visible from the authenticated `sagstad@gmail.com` Cloudflare account. The controllable project is `familyhub-84t.pages.dev`; confirm which account owns `familydash.pages.dev` (Entry 9).
+- Family site: https://familyhub-84t.pages.dev is the chosen household site, protected by Cloudflare Access team `cold-dust-02c3` (application AUD `8ba3272a992d27f6fe1b07b5c29d109f607a6767d0f7d5156e9cf9de8f87d32c`). The login method is **Sign in with Cloudflare**. The older `familydash.pages.dev` site (Access team `lionfishky`) belongs to a different account and is no longer used.
 - Update loop: `npm run ship -- "message"` checks, commits, pushes, waits for the deployment and verifies the site (`WORKFLOW.md`).
 - Cloudflare project layout: `public/index.html`, `functions/api/_middleware.js` (Access JWT check, fails closed), `functions/api/state.js` (GET/PUT, D1), `lib/ical.js`, `functions/api/calendar.js`, `functions/api/bring.js`, `functions/api/ideas.js`, `schema.sql`, `wrangler.toml`, `scripts/check.mjs`, `scripts/ship.mjs`, `README.md`, `WORKFLOW.md`.
 - Tabs: Today, Calendar, Meals (planner + recipes + AI ideas), Shopping (Bring! mirror + Hub list), School, More (chores, notes, contacts, backup).
 - Storage: `GET/PUT /api/state` against D1 table `kv` (row id `family`), client polls every 15 s and on focus; last writer wins.
-- Config: D1 binding `DB` and table `kv` exist. `TEAM_DOMAIN` / `POLICY_AUD` are set on the Pages project and the `AI` binding exists; `/api/state` now answers 401 without an Access JWT (was 503). Important: Pages Git builds ignore `[vars]` in `wrangler.toml`, so environment variables must be set in the dashboard or with the Pages API. `GCAL_ICS_URL`, `BRING_EMAIL` and `BRING_PASSWORD` secrets are not set, so Calendar and Bring! return 501.
+- Config: D1 binding `DB` and table `kv` exist. `TEAM_DOMAIN` = `cold-dust-02c3.cloudflareaccess.com` and `POLICY_AUD` = `8ba3272a…f87d32c` are set on the Pages project, and the `AI` binding exists. Important: Pages Git builds ignore `[vars]` in `wrangler.toml`, so environment variables must be set in the dashboard or with the Pages API. `GCAL_ICS_URL`, `BRING_EMAIL` and `BRING_PASSWORD` secrets are not set, so Calendar and Bring! return 501.
 - Google Calendar connector: still not confirmed.
 
 ## Architecture
@@ -70,8 +70,9 @@ Recommended: **Cloudflare Pages** + **Pages Functions** + **D1** (or KV) for sha
 - [x] School calendar + JSON import added (Entry 8). PDFs are read in chat, not by the app.
 - [x] Update 2 deployed (Entry 9).
 - [x] One-command update workflow added: `npm run ship` (Entry 9).
-- [ ] Confirm which Cloudflare account owns `familydash.pages.dev`. The account we can control (`sagstad@gmail.com`) owns only `familyhub-84t.pages.dev`.
-- [ ] Decide access for `familyhub-84t.pages.dev`: it is currently public. Add Access or use only the protected family site.
+- [x] Household site chosen: `familyhub-84t.pages.dev`. The old `familydash.pages.dev` account is no longer used.
+- [x] Access added to `familyhub-84t.pages.dev` (team `cold-dust-02c3`, app AUD `8ba3272a…f87d32c`); login method is Cloudflare.
+- [ ] Add the remaining family members to the Access policy (only `sagstad@gmail.com` is allowed so far).
 - [ ] Consider making the GitHub repository private (currently public; keep secrets and family data out).
 - [ ] Add `GCAL_ICS_URL` secret and verify `/api/calendar` on a real feed.
 - [ ] Add `BRING_EMAIL` / `BRING_PASSWORD` secrets and verify `/api/bring` (unofficial API, untested).
@@ -159,3 +160,9 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - Unresolved: the account we control owns `familyhub-84t.pages.dev` only. `familydash.pages.dev` (Access team `lionfishky`) is in a different Cloudflare account, so a push from here may not update that site. Decide which one is the household site.
 - `familyhub-84t.pages.dev` remains public and has no Access application, so its API refuses saves. It is a working deployment target, not yet a usable family site.
 - AI model name `@cf/meta/llama-3.3-70b-instruct-fp8-fast` still unverified; the binding exists.
+
+### 2026-11-02 · Entry 11 · Access moved to the household account
+- User enabled Cloudflare Access on `familyhub-84t.pages.dev` in the `sagstad@gmail.com` account. New team `cold-dust-02c3.cloudflareaccess.com`; application AUD `8ba3272a992d27f6fe1b07b5c29d109f607a6767d0f7d5156e9cf9de8f87d32c`; the only login method shown is **Sign in with Cloudflare**.
+- Replaced the old `lionfishky` / `b8e436…` values in `wrangler.toml` and on the Pages project with the new team and AUD. D1 `DB` and AI `AI` bindings preserved.
+- `familydash.pages.dev` and its `lionfishky` Access team belong to a different account and are no longer part of this project.
+- Still to verify after this deploy: a real login through Access, saving/loading state, and the AI ideas button.

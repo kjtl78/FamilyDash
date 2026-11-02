@@ -3,8 +3,8 @@ pages_build_output_dir = "public"
 compatibility_date = "2026-01-01"
 
 [vars]
-TEAM_DOMAIN = "lionfishky.cloudflareaccess.com"
-POLICY_AUD = "b8e436731be7b472ac5b2ccbdcceb21b2b940568fd6192c707f20970bd2a04ef"
+TEAM_DOMAIN = "cold-dust-02c3.cloudflareaccess.com"
+POLICY_AUD = "8ba3272a992d27f6fe1b07b5c29d109f607a6767d0f7d5156e9cf9de8f87d32c"
 
 [[d1_databases]]
 binding = "DB"
