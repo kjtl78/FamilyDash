@@ -32,6 +32,7 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Google Calendar: connected read-only via the `GCAL_ICS_URL` secret (calendar “Familien DDS”, 493 events). The real feed was parsed locally with `lib/ical.js`; the UI verification still needs a logged-in session.
 - Live data: family members Solvei (1. trinn) and Ellinor (4. trinn); the week 45 school plan is imported (14 items) plus 3 notes. Ellinor is in B class, so the week 46 gym reminder is on Monday 9.11.
 - Dinner planner: breakfast and lunch removed; recipes store `minutes`; “⚡ Quick week (≤30 min)” fills only quick recipes; AI ideas target ordinary Norwegian supermarket ingredients and short cooking times.
+- Mobile: under 700px the Google Calendar and ukeplan switch to vertical lists instead of the squeezed horizontal grids; desktop keeps the dense strips. The School header is Prev / week / Next.
 - School-letter intake: share a PDF from the phone into iCloud Drive `FamilyHub/Inbox` or Google Drive `My Drive/FamilyHub/Inbox`. The LaunchAgent watcher `com.familyhub.school-inbox` extracts it into `imports/pending/`, uploads the PDF to KV, and notifies; the import is reviewed before it is merged.
 - Source PDFs: stored in the private KV namespace `familyhub-school` (binding `SCHOOL`) and served at `/api/pdf/<key>` behind Cloudflare Access. Week 45 letters are attached to Solvei and Ellinor in the School tab.
 
@@ -246,3 +247,9 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - Deployed directly with `wrangler pages deploy public --project-name familien-ds --branch main`. `https://familien-ds.pages.dev/` answers `200`; `/api/state` answers `401` (closed until Access is added).
 - Switched `scripts/ship.mjs` to deploy directly to `familien-ds` after the GitHub push; updated `package.json` scripts, `WORKFLOW.md`, `README.md` and the current-state notes.
 - Open: add `familien-ds.pages.dev` to the existing Access application's domains, then verify login and state saving on the new URL. The legacy `familyhub` project can be deleted after that.
+
+### 2026-11-02 · Entry 21 · Mobile vertical calendar and ukeplan
+- On phones (`max-width: 700px`) the 7-day calendar strip and the children × days ukeplan grid are hidden and replaced with vertical lists. Desktop keeps the horizontal strips.
+- Calendar mobile list shows today plus days with events, with times and full titles. Ukeplan mobile list groups by child and lists only days with items, with homework checkboxes and delete buttons.
+- Mobile header fixes: 16px calendar/meal/school headings, compact buttons, School shows Prev / week / Next (the “This week” button is hidden on phones), the School filter buttons no longer take a full row, and the delete × is absolutely positioned so it no longer wraps.
+- Verified locally at 390 px with the real state and iCal feed; desktop unchanged.

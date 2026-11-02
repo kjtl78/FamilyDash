@@ -137,11 +137,35 @@ nav button{display:flex;align-items:center;gap:6px}
 .schoolweek .sitem .x{position:absolute;right:-3px;top:-1px;font-size:12px;min-width:0;min-height:0;padding:0 2px;line-height:1;vertical-align:top}
 .docsrow{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:12px}
 .docsrow a{color:var(--accent);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+.gcalmob,.schoolmob{display:none}
+.gday{border-bottom:1px solid var(--line);padding:7px 0}
+.gday:last-child{border-bottom:0}
+.gdh{font-size:12px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:3px}
+.gdh.today{color:var(--accent)}
+.gday ul{margin:0;padding:0;list-style:none}
+.gday li{font-size:13px;padding:2px 0;display:flex;gap:6px}
+.gday li b{font-weight:600;white-space:nowrap}
+.smlist{margin-top:2px}
+.smwho{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;margin:12px 0 4px}
+.smday{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)}
+.smday:last-child{border-bottom:0}
+.smdate{flex:0 0 48px;font-size:11px;color:var(--muted);padding-top:1px}
+.smitems{flex:1;min-width:0}
+.smitems .sitem{font-size:12.5px;padding-right:16px}
+.schoolmob .sitem .x{position:absolute;right:0;top:0;font-size:12px;min-width:0;min-height:0;padding:0 2px;line-height:1}
 details.card summary{cursor:pointer;font-family:Georgia,"Times New Roman",serif;font-size:16px;font-weight:600;list-style:none}
 details.card summary::-webkit-details-marker{display:none}
 details.card summary:after{content:" +";color:var(--accent)}
 details.card[open] summary:after{content:" −"}
 @media (max-width:700px){
+  .weekstrip-wrap,.schoolweek-wrap{display:none}
+  .gcalmob,.schoolmob{display:block}
+  .cal-head{gap:6px}
+  .cal-head h2{font-size:16px !important;line-height:1.2}
+  .cal-head .ghost{padding:5px 8px;min-height:36px;font-size:12px}
+  .schoolhead h2{min-width:0}
+  .schoolhead .row button[data-act="thisSW"]{display:none}
+  .schoolfilters>button.btn,.schoolfilters>button.ghost{flex:0 1 auto;min-height:36px;padding:6px 10px;font-size:13px}
   .weekstrip{grid-template-columns:repeat(7,minmax(64px,1fr));min-width:470px;gap:4px}
   .wday{min-height:80px;padding:4px}
   .schoolweek{grid-template-columns:64px repeat(5,minmax(76px,1fr));min-width:470px;gap:3px}
@@ -415,6 +439,22 @@ function gcalWeek(){
     h+='</div>';
   }
   h+='</div></div>';
+  var mobAny=false;
+  for(var mj=0;mj<7;mj++){ if((by[iso(addDays(new Date(),mj))]||[]).length) mobAny=true; }
+  if(!mobAny){
+    h+='<div class="gcalmob"><div class="empty">Nothing in the next 7 days.</div></div>';
+  }else{
+    h+='<div class="gcalmob">';
+    for(var mj2=0;mj2<7;mj2++){
+      var md=addDays(new Date(),mj2),mk=iso(md),mlist=by[mk]||[];
+      if(!mlist.length&&mj2!==0)continue;
+      h+='<div class="gday"><div class="gdh'+(mj2===0?' today':'')+'"><span>'+esc(md.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"}))+'</span>'+(mj2===0?'<span>Today</span>':'')+'</div>';
+      if(!mlist.length)h+='<div class="empty">–</div>';
+      else h+='<ul>'+mlist.map(function(e){return '<li><b>'+(e.allDay?'All day':esc(hhmm(e.start)))+'</b><span>'+esc(e.title)+'</span></li>'}).join("")+'</ul>';
+      h+='</div>';
+    }
+    h+='</div>';
+  }
   if(gcal.error)h+='<div style="color:var(--danger);font-size:12px;margin-top:6px">'+esc(gcal.error)+'</div>';
   return h+'</div>';
 }
@@ -514,10 +554,21 @@ function vRecipes(){
 }
 
 /* ---------- school ---------- */
+function schoolItem(x){
+  var icon=x.type==="homework"?"":x.type==="activity"?"⚽":"📌";
+  var h='<div class="sitem'+(x.done?" done":"")+'" title="'+esc(x.title)+'">';
+  if(x.type==="homework")h+='<input type="checkbox" data-act="toggleSchool" data-id="'+x.id+'"'+(x.done?" checked":"")+'>';
+  else h+='<span class="sic">'+icon+'</span>';
+  h+=esc(x.title)+'<button class="x" data-act="delSchool" data-id="'+x.id+'" title="Delete">×</button>';
+  return h+'</div>';
+}
 function schoolWeekTable(start, filter){
   var days=[];for(var i=0;i<5;i++)days.push(addDays(start,i));
   var today=iso(new Date());
   var members=state.members.filter(function(m){return !filter||m.id===filter});
+  function itemsFor(who,k){
+    return state.school.filter(function(x){return x.date===k&&x.who===who}).sort(function(a,b){return a.type.localeCompare(b.type)||a.title.localeCompare(b.title)});
+  }
   var h='<div class="schoolweek-wrap"><div class="schoolweek">';
   h+='<div class="sh"></div>';
   days.forEach(function(d){var k=iso(d);h+='<div class="sh'+(k===today?' today':'')+'">'+esc(d.toLocaleDateString(undefined,{weekday:"short"}))+' <b>'+d.getDate()+'</b></div>'});
@@ -525,29 +576,39 @@ function schoolWeekTable(start, filter){
   members.forEach(function(m){
     h+='<div class="sn"><span class="dot" style="background:'+m.color+'"></span>'+esc(m.name)+'</div>';
     days.forEach(function(d){
-      var k=iso(d);
-      var items=state.school.filter(function(x){return x.date===k&&x.who===m.id}).sort(function(a,b){return a.type.localeCompare(b.type)||a.title.localeCompare(b.title)});
+      var k=iso(d),items=itemsFor(m.id,k);
       h+='<div class="sc'+(k===today?' today':'')+'">';
       if(!items.length)h+='<div class="sitem none">–</div>';
-      items.forEach(function(x){
-        var icon=x.type==="homework"?"":x.type==="activity"?"⚽":"📌";
-        h+='<div class="sitem'+(x.done?" done":"")+'" title="'+esc(x.title)+'">';
-        if(x.type==="homework")h+='<input type="checkbox" data-act="toggleSchool" data-id="'+x.id+'"'+(x.done?" checked":"")+'>';
-        else h+='<span class="sic">'+icon+'</span>';
-        h+=esc(x.title)+'<button class="x" data-act="delSchool" data-id="'+x.id+'" title="Delete">×</button>';
-        h+='</div>';
-      });
+      items.forEach(function(x){h+=schoolItem(x)});
       h+='</div>';
     });
   });
   h+='</div></div>';
+
+  // Vertical version for phones.
+  h+='<div class="schoolmob">';
+  if(!members.length)h+='<div class="empty">Add the children under Family</div>';
+  members.forEach(function(m){
+    h+='<div class="smwho"><span class="dot" style="background:'+m.color+'"></span>'+esc(m.name)+'</div>';
+    var any=false;
+    days.forEach(function(d){
+      var k=iso(d),items=itemsFor(m.id,k);
+      if(!items.length)return;
+      any=true;
+      h+='<div class="smday"><div class="smdate">'+esc(d.toLocaleDateString(undefined,{weekday:"short"}))+' '+d.getDate()+'</div><div class="smitems">';
+      items.forEach(function(x){h+=schoolItem(x)});
+      h+='</div></div>';
+    });
+    if(!any)h+='<div class="empty">No school items this week.</div>';
+  });
+  h+='</div>';
   return h;
 }
 function vSchool(){
   var days=[];for(var i=0;i<5;i++)days.push(addDays(schoolWeek,i));
-  var label=days[0].toLocaleDateString(undefined,{month:"short",day:"numeric"})+" – "+days[4].toLocaleDateString(undefined,{month:"short",day:"numeric"});
-  var h='<div class="card"><div class="cal-head"><button class="ghost" data-act="prevSW">‹ Prev</button><h2 style="font-size:18px">Ukeplan '+esc(label)+'</h2><span class="row"><button class="ghost" data-act="thisSW">This week</button><button class="ghost" data-act="nextSW">Next ›</button></span></div>';
-  h+='<div class="row" style="margin-bottom:8px"><button class="'+(schoolFilter===""?"btn":"ghost")+'" data-act="schoolFilter" data-id="">Everyone</button>'+state.members.map(function(m){return '<button class="'+(schoolFilter===m.id?"btn":"ghost")+'" data-act="schoolFilter" data-id="'+m.id+'">'+esc(m.name)+'</button>'}).join("")+'</div>';
+  var label=days[0].toLocaleDateString(undefined,{day:"numeric"})+"–"+days[4].toLocaleDateString(undefined,{day:"numeric",month:"short"});
+  var h='<div class="card"><div class="cal-head schoolhead"><button class="ghost" data-act="prevSW">‹ Prev</button><h2 style="font-size:18px">Ukeplan '+esc(label)+'</h2><span class="row"><button class="ghost" data-act="thisSW">This week</button><button class="ghost" data-act="nextSW">Next ›</button></span></div>';
+  h+='<div class="row schoolfilters" style="margin-bottom:8px"><button class="'+(schoolFilter===""?"btn":"ghost")+'" data-act="schoolFilter" data-id="">Everyone</button>'+state.members.map(function(m){return '<button class="'+(schoolFilter===m.id?"btn":"ghost")+'" data-act="schoolFilter" data-id="'+m.id+'">'+esc(m.name)+'</button>'}).join("")+'</div>';
   if(!state.members.length)h+='<div class="empty">Add your children as family members on the Today tab first.</div>';
   h+=schoolWeekTable(schoolWeek,schoolFilter);
   var docs=(state.docs||[]).filter(function(d){return !schoolFilter||!d.who||d.who===schoolFilter});
