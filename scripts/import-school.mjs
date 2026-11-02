@@ -46,8 +46,10 @@ const state = row?.state
   ? JSON.parse(row.state)
   : {
       members: [], events: [], meals: {}, shopping: [], chores: [], notes: [], contacts: [],
-      recipes: [], staples: [...STAPLES], school: [], rejected: [],
+      recipes: [], staples: [...STAPLES], school: [], rejected: [], docs: [],
     };
+if (!Array.isArray(state.docs)) state.docs = [];
+const now = new Date().toISOString();
 
 const findMember = (name) => {
   const n = String(name || "").trim().toLowerCase();
@@ -87,8 +89,24 @@ for (const text of input.notes || []) {
   addedNotes++;
 }
 
+let addedDocs = 0;
+for (const doc of input.docs || []) {
+  const url = String(doc.url || "").trim();
+  if (!url) continue;
+  const member = doc.child ? findMember(doc.child) : null;
+  const who = member ? member.id : "";
+  if (state.docs.some((d) => d.url === url && d.who === who)) continue;
+  state.docs.push({
+    id: uid(),
+    who,
+    label: String(doc.label || "School letter").slice(0, 80),
+    url,
+    at: now,
+  });
+  addedDocs++;
+}
+
 const sqlPath = join(tmpdir(), "familyhub-school-import.sql");
-const now = new Date().toISOString();
 writeFileSync(
   sqlPath,
   `INSERT INTO kv (id, state, updated_at) VALUES ('family', '${esc(JSON.stringify(state))}', '${now}') ` +
@@ -96,6 +114,6 @@ writeFileSync(
 );
 run(["d1", "execute", "familyhub", "--remote", "--yes", "--file", sqlPath]);
 
-console.log(`✓ ${state.members.length} member(s), ${addedSchool} new school item(s), ${addedNotes} new note(s).`);
+console.log(`✓ ${state.members.length} member(s), ${addedSchool} new school item(s), ${addedNotes} new note(s), ${addedDocs} new document(s).`);
 const skipped = (input.school || []).length - addedSchool;
 if (skipped > 0) console.log(`  ${skipped} duplicate school item(s) skipped.`);

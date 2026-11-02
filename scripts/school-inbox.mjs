@@ -16,6 +16,11 @@ const ROOT = join(HOME, "FamilyDash");
 const STATE = join(HOME, ".local/state/familyhub/processed.json");
 const PENDING = join(ROOT, "imports/pending");
 const PY = join(HOME, ".local/share/familyhub/venv/bin/python");
+const WRANGLER =
+  [
+    join(ROOT, "node_modules", ".bin", "wrangler"),
+    join(HOME, ".local", "bin", "wrangler"),
+  ].find((p) => p && existsSync(p)) || "wrangler";
 
 const INBOXES = [
   join(HOME, "Library/Mobile Documents/com~apple~CloudDocs/FamilyHub/Inbox"),
@@ -57,6 +62,28 @@ function sha256(file) {
   return createHash("sha256").update(readFileSync(file)).digest("hex");
 }
 
+let cachedKvId = null;
+function kvId() {
+  if (cachedKvId !== null) return cachedKvId;
+  try {
+    const toml = readFileSync(join(ROOT, "wrangler.toml"), "utf8");
+    const m = toml.match(/\[\[kv_namespaces\]\][\s\S]*?id\s*=\s*"([^"]+)"/);
+    cachedKvId = m ? m[1] : "";
+  } catch {
+    cachedKvId = "";
+  }
+  return cachedKvId;
+}
+
+function uploadPdf(file, key) {
+  const id = kvId();
+  if (!id) throw new Error("SCHOOL KV namespace id not found in wrangler.toml");
+  const res = spawnSync(WRANGLER, ["kv", "key", "put", key, "--namespace-id", id, "--path", file, "--remote"], {
+    encoding: "utf8",
+  });
+  if (res.status !== 0) throw new Error((res.stderr || res.stdout || "kv put failed").trim().split("\n")[0]);
+}
+
 function handle(file, inbox) {
   const name = basename(file);
   const hash = sha256(file);
@@ -87,14 +114,31 @@ function handle(file, inbox) {
     return;
   }
 
-  const out = join(PENDING, `${stamp()}-${name.replace(/\.pdf$/i, "")}.txt`);
+  const ts = stamp();
+  const base = `${ts}-${name.replace(/\.pdf$/i, "")}`;
+  const out = join(PENDING, `${base}.txt`);
   writeFileSync(out, text);
-  renameSync(file, join(inbox, "Processed", `${stamp()}-${name}`));
-  processed[hash] = { name, at: new Date().toISOString(), text: out };
+
+  let key = "";
+  let url = "";
+  try {
+    key = `school-${ts}-${hash.slice(0, 8)}.pdf`;
+    uploadPdf(file, key);
+    url = `/api/pdf/${key}`;
+  } catch (e) {
+    log(`upload failed for ${name}: ${e.message}`);
+  }
+
+  writeFileSync(
+    join(PENDING, `${base}.json`),
+    JSON.stringify({ file: name, key, url, chars: text.length, at: new Date().toISOString() }, null, 2)
+  );
+  renameSync(file, join(inbox, "Processed", `${ts}-${name}`));
+  processed[hash] = { name, at: new Date().toISOString(), text: out, key, url };
   writeFileSync(STATE, JSON.stringify(processed, null, 2));
 
-  log(`extracted ${name} -> ${out} (${text.length} chars)`);
-  notify(`New school letter: ${name}. Ready to import.`);
+  log(`extracted ${name} -> ${out} (${text.length} chars)${url ? `, pdf ${url}` : ", pdf upload failed"}`);
+  notify(`New school letter: ${name}. ${url ? "PDF ready" : "Text ready"}.`);
 }
 
 function scan() {

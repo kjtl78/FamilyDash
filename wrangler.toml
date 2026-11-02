@@ -11,5 +11,9 @@ binding = "DB"
 database_name = "familyhub"
 database_id = "37b2c55b-aa07-4609-94ed-7b882c060473"
 
+[[kv_namespaces]]
+binding = "SCHOOL"
+id = "99c2fdf65a324d1f8343aa581184f2cb"
+
 [ai]
 binding = "AI"

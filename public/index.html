@@ -137,7 +137,7 @@ var TABS=[["home","Today","🏠"],["cal","Calendar","📅"],["meals","Meals","�
 var COLORS=["#d9622b","#2f7fbf","#3f8f5a","#b0489a","#c79a1c","#6b5bd2","#1f9aa3","#c0392b"];
 var CATS=["Produce","Dairy & eggs","Meat & fish","Pantry","Frozen","Household","Other"];
 var SLOTS=[["b","Breakfast"],["l","Lunch"],["d","Dinner"]];
-var DEFAULT={members:[],events:[],meals:{},shopping:[],chores:[],notes:[],contacts:[],recipes:[],staples:["salt","pepper","oil","butter","onion","garlic","flour","sugar","rice","pasta","eggs","milk"],school:[],rejected:[]};
+var DEFAULT={members:[],events:[],meals:{},shopping:[],chores:[],notes:[],contacts:[],recipes:[],staples:["salt","pepper","oil","butter","onion","garlic","flour","sugar","rice","pasta","eggs","milk"],school:[],rejected:[],docs:[]};
 
 var state=clone(DEFAULT), tab="home";
 var now=new Date();
@@ -472,6 +472,8 @@ function vSchool(){
   var h='<div class="card"><div class="cal-head"><button class="ghost" data-act="prevSW">‹ Prev</button><h2 style="font-size:18px">School week '+esc(label)+'</h2><span class="row"><button class="ghost" data-act="thisSW">This week</button><button class="ghost" data-act="nextSW">Next ›</button></span></div>';
   h+='<div class="row" style="margin-bottom:6px"><button class="'+(schoolFilter===""?"btn":"ghost")+'" data-act="schoolFilter" data-id="">Everyone</button>'+state.members.map(function(m){return '<button class="'+(schoolFilter===m.id?"btn":"ghost")+'" data-act="schoolFilter" data-id="'+m.id+'">'+esc(m.name)+'</button>'}).join("")+'</div>';
   if(!state.members.length)h+='<div class="empty">Add your children as family members on the Today tab first.</div>';
+  var docs=(state.docs||[]).filter(function(d){return !schoolFilter||!d.who||d.who===schoolFilter});
+  if(docs.length)h+='<div class="card" style="margin-bottom:14px"><h2>Source letters</h2><ul class="list">'+docs.slice().reverse().map(function(d){return '<li><span class="t"><b>'+esc(d.label)+'</b>'+(d.who?' <span class="chip">'+esc(nameOf(d.who))+'</span>':'')+'</span><a class="btn" href="'+esc(d.url)+'" target="_blank" rel="noopener">Open PDF</a></li>'}).join("")+'</ul></div>';
   days.forEach(function(d){
     var k=iso(d);
     var items=state.school.filter(function(x){return x.date===k&&(!schoolFilter||x.who===schoolFilter)}).sort(function(a,b){return a.type.localeCompare(b.type)||a.title.localeCompare(b.title)});
