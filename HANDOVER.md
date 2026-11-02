@@ -171,3 +171,8 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - `scripts/ship.mjs` required the live URL to answer `200`. With Access enabled the site correctly answers `302` to the login page, so the workflow stopped reporting success. The check now treats a `302` to `*.cloudflareaccess.com` as a successful, protected deploy.
 - Verified after deploy `8a55329`: site answers `302` → `cold-dust-02c3.cloudflareaccess.com`; the login page answers `200` and offers **Sign in with Cloudflare**; project vars `TEAM_DOMAIN` / `POLICY_AUD` are the new values; D1 `DB` and AI `AI` bindings survived the deploy.
 - Pending user test: sign in with Cloudflare, save something, reload, and confirm it persists.
+
+### 2026-11-02 · Entry 13 · Fix form fields clearing while typing
+- Reported: typing a new recipe cleared the fields at random. Cause: `pull()` repainted the whole view after every 15 s poll, even when the remote state had not changed. Recipe inputs live only in the DOM until **Add recipe** is pressed, so the repaint rebuilt them empty.
+- `pull()` now repaints only on first load or when the fetched state actually differs; remote changes use `softRender()`, which already skips while an input is focused.
+- Needs user verification: type a recipe slowly for more than 30 s and confirm nothing clears.

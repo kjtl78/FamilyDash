@@ -207,11 +207,15 @@ function pull(first){
     })
     .then(function(d){
       if(!d)return;
+      var remoteChanged=false;
       if(d.state&&d.state!==lastSaved&&d.state!==JSON.stringify(state)){
-        state=normalize(JSON.parse(d.state));lastSaved=d.state;
+        state=normalize(JSON.parse(d.state));lastSaved=d.state;remoteChanged=true;
       }else if(d.state){lastSaved=d.state}
-      if(first||!loaded){loaded=true}
-      setStatus(first?"Ready":"Synced");render();
+      if(first||!loaded){loaded=true;setStatus("Ready");render();return}
+      setStatus("Synced");
+      // Only repaint when another device actually changed something. Repainting on every
+      // 15 s poll wiped half-typed form fields (the recipe form is not in state until saved).
+      if(remoteChanged)softRender();
     })
     .catch(function(){if(first){loaded=true;render()}setStatus("Offline")});
 }
