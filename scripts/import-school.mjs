@@ -81,6 +81,15 @@ for (const item of input.school || []) {
   addedSchool++;
 }
 
+let removedNotes = 0;
+for (const text of input.removeNotes || []) {
+  const t = String(text).trim();
+  if (!t) continue;
+  const before = state.notes.length;
+  state.notes = state.notes.filter((n) => n.text !== t);
+  removedNotes += before - state.notes.length;
+}
+
 let addedNotes = 0;
 for (const text of input.notes || []) {
   const t = String(text).trim();
@@ -114,6 +123,6 @@ writeFileSync(
 );
 run(["d1", "execute", "familyhub", "--remote", "--yes", "--file", sqlPath]);
 
-console.log(`✓ ${state.members.length} member(s), ${addedSchool} new school item(s), ${addedNotes} new note(s), ${addedDocs} new document(s).`);
+console.log(`✓ ${state.members.length} member(s), ${addedSchool} new school item(s), ${addedNotes} new note(s), ${removedNotes} note(s) removed, ${addedDocs} new document(s).`);
 const skipped = (input.school || []).length - addedSchool;
 if (skipped > 0) console.log(`  ${skipped} duplicate school item(s) skipped.`);
