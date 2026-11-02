@@ -73,7 +73,7 @@ Reinstall or restart the watcher with:
 node scripts/import-school.mjs imports/week45.json
 ```
 
-The importer adds missing family members, adds homework/activities/events, skips duplicates, and appends notes. It writes straight to D1, so the Hub shows it on the next poll.
+The importer adds missing family members, homework/activities/events, week notes (`weekNotes`: child, Monday date, text) and source PDFs; it skips duplicates and can remove stale notes (`removeNotes`). General notes are for non-school reminders only. It writes straight to D1, so the Hub shows it on the next poll.
 
 ## Rules
 

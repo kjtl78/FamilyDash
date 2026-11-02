@@ -116,11 +116,12 @@ nav button{display:flex;align-items:center;gap:6px}
 /* dense week strips */
 .weekstrip-wrap,.schoolweek-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .weekstrip{display:grid;grid-template-columns:repeat(7,minmax(76px,1fr));gap:6px;min-width:560px}
-.wday{background:var(--surface2);border-radius:8px;padding:5px 6px;min-height:92px;display:flex;flex-direction:column;gap:3px;overflow:hidden}
+.wday{background:var(--surface2);border-radius:8px;padding:5px 6px;min-height:92px;display:flex;flex-direction:column;gap:3px;color:var(--text);text-decoration:none}
 .wday.today{box-shadow:inset 0 0 0 2px var(--accent)}
 .wday .wd{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;align-items:baseline}
 .wday .wd b{color:var(--text);font-size:12px}
-.wev{font-size:10.5px;line-height:1.25;border-left:2px solid var(--accent);padding-left:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;box-sizing:border-box}
+.wev{font-size:10.5px;line-height:1.25;border-left:2px solid var(--accent);padding-left:4px;white-space:normal;overflow-wrap:anywhere;width:100%;box-sizing:border-box}
+.wev b{font-weight:600}
 .wev.all{border-color:var(--muted);color:var(--muted)}
 .wev.none{border:0;padding-left:0;color:var(--muted)}
 .schoolweek{display:grid;grid-template-columns:88px repeat(5,minmax(96px,1fr));gap:4px;min-width:600px}
@@ -137,10 +138,14 @@ nav button{display:flex;align-items:center;gap:6px}
 .schoolweek .sitem .x{position:absolute;right:-3px;top:-1px;font-size:12px;min-width:0;min-height:0;padding:0 2px;line-height:1;vertical-align:top}
 .docsrow{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:12px}
 .docsrow a{color:var(--accent);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+.weeknotes{padding:8px 12px}
+.wnhead{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;margin-bottom:2px}
+.wn{font-size:12px;line-height:1.35;display:flex;gap:6px;margin-top:3px}
+.wn b{white-space:nowrap}
 .gcalmob,.schoolmob{display:none}
 .gday{border-bottom:1px solid var(--line);padding:7px 0}
 .gday:last-child{border-bottom:0}
-.gdh{font-size:12px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:3px}
+.gdh{font-size:12px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:3px;text-decoration:none}
 .gdh.today{color:var(--accent)}
 .gday ul{margin:0;padding:0;list-style:none}
 .gday li{font-size:13px;padding:2px 0;display:flex;gap:6px}
@@ -167,6 +172,7 @@ details.card[open] summary:after{content:" −"}
   .gcalmob,.schoolmob{display:block}
   .cal-head{gap:6px}
   .cal-head h2{font-size:16px !important;line-height:1.2}
+  .gcalhead{font-size:15px !important;line-height:1.2}
   .cal-head .ghost{padding:5px 8px;min-height:36px;font-size:12px}
   .schoolhead h2{min-width:0}
   .schoolhead .row button[data-act="thisSW"]{display:none}
@@ -203,7 +209,7 @@ var TABS=[["home","Today","🏠"],["cal","Calendar","📅"],["meals","Dinner","�
 var COLORS=["#d9622b","#2f7fbf","#3f8f5a","#b0489a","#c79a1c","#6b5bd2","#1f9aa3","#c0392b"];
 var CATS=["Produce","Dairy & eggs","Meat & fish","Pantry","Frozen","Household","Other"];
 var SLOTS=[["d","Dinner"]];
-var DEFAULT={members:[],events:[],meals:{},shopping:[],chores:[],notes:[],contacts:[],recipes:[],staples:["salt","pepper","oil","butter","onion","garlic","flour","sugar","rice","pasta","eggs","milk"],school:[],rejected:[],docs:[]};
+var DEFAULT={members:[],events:[],meals:{},shopping:[],chores:[],notes:[],contacts:[],recipes:[],staples:["salt","pepper","oil","butter","onion","garlic","flour","sugar","rice","pasta","eggs","milk"],school:[],rejected:[],docs:[],weekNotes:[]};
 
 var state=clone(DEFAULT), tab="home";
 var now=new Date();
@@ -312,12 +318,20 @@ function eventLi(e){
   return '<li><span class="dot" style="background:'+colorOf(e.who)+'"></span><span class="t"><b>'+(e.time?esc(e.time)+" ":"")+'</b>'+esc(e.title)+' <span class="chip">'+esc(nameOf(e.who))+'</span></span><button class="x" data-act="delEvent" data-id="'+e.id+'" title="Delete">×</button></li>';
 }
 
+function weekNotesFor(week, filter){
+  return (state.weekNotes||[]).filter(function(n){return n.week===week&&(!filter||!n.who||n.who===filter)});
+}
+function weekNoteHtml(n){
+  return '<div class="wn"><span class="dot" style="background:'+colorOf(n.who)+'"></span><span><b>'+esc(nameOf(n.who))+':</b> '+esc(n.text)+'</span></div>';
+}
 function vHome(){
   var today=iso(new Date());
   var meal=state.meals[today]||{};
   var open=state.shopping.filter(function(s){return !s.done}).map(function(s){return {text:s.text}}).concat((bring.items||[]).map(function(i){return {text:i.name}}));
   var chores=state.chores.filter(function(c){return !c.done});
   var h=gcalWeek();
+  var wn=weekNotesFor(iso(mondayOf(new Date())),"");
+  if(wn.length)h+='<div class="card weeknotes" style="margin-bottom:14px"><div class="wnhead">This week’s notes</div>'+wn.map(weekNoteHtml).join("")+'</div>';
   h+='<div class="card" style="margin-bottom:14px"><h2>Ukeplan · denne uka <a data-tab="school">School →</a></h2>'+schoolWeekTable(mondayOf(new Date()),"")+'</div>';
   h+='<div class="grid">';
   h+='<div class="card"><h2>Today’s dinner <a data-tab="meals">Planner →</a></h2><ul class="list">'+SLOTS.map(function(s){return '<li><span class="chip" style="width:84px;text-align:center">'+s[1]+'</span><span class="t">'+(meal[s[0]]?esc(meal[s[0]]):'<span class="empty">not planned</span>')+'</span></li>'}).join("")+'</ul></div>';
@@ -430,20 +444,20 @@ function loadBring(){
 }
 function hhmm(iso8601){return new Date(iso8601).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}
 function gcalWeek(){
-  var h='<div class="card" style="margin-bottom:14px"><h2>Google Calendar · 7 days <a data-act="reloadGcal">Refresh</a></h2>';
+  var h='<div class="card" style="margin-bottom:14px"><h2 class="gcalhead">Google Calendar · 7 days <span class="row"><a href="https://calendar.google.com/" target="_blank" rel="noopener">Open calendar</a><a data-act="reloadGcal">Refresh</a></span></h2>';
   if(gcal.events===null)return h+'<div class="empty">'+(gcal.error?esc(gcal.error):"Loading…")+'</div></div>';
   var by={};
   gcal.events.forEach(function(e){var k=e.allDay?e.start:iso(new Date(e.start));(by[k]=by[k]||[]).push(e)});
   h+='<div class="weekstrip-wrap"><div class="weekstrip">';
   for(var i=0;i<7;i++){
     var d=addDays(new Date(),i),k=iso(d),list=by[k]||[];
-    h+='<div class="wday'+(i===0?' today':'')+'"><div class="wd"><span>'+esc(d.toLocaleDateString(undefined,{weekday:"short"}))+'</span><b>'+d.getDate()+'</b></div>';
+    var gurl="https://calendar.google.com/calendar/r/day/"+d.getFullYear()+"/"+(d.getMonth()+1)+"/"+d.getDate();
+    h+='<a class="wday'+(i===0?' today':'')+'" href="'+gurl+'" target="_blank" rel="noopener" title="Open Google Calendar"><div class="wd"><span>'+esc(d.toLocaleDateString(undefined,{weekday:"short"}))+'</span><b>'+d.getDate()+'</b></div>';
     if(!list.length)h+='<div class="wev none">–</div>';
-    list.slice(0,4).forEach(function(e){
-      h+='<div class="wev'+(e.allDay?' all':'')+'" title="'+esc(e.title)+'">'+(e.allDay?'':esc(hhmm(e.start))+' ')+esc(e.title)+'</div>';
+    list.forEach(function(e){
+      h+='<div class="wev'+(e.allDay?' all':'')+'" title="'+esc(e.title)+'">'+(e.allDay?'':'<b>'+esc(hhmm(e.start))+'</b> ')+esc(e.title)+'</div>';
     });
-    if(list.length>4)h+='<div class="wev none">+'+(list.length-4)+'</div>';
-    h+='</div>';
+    h+='</a>';
   }
   h+='</div></div>';
   var mobAny=false;
@@ -455,7 +469,8 @@ function gcalWeek(){
     for(var mj2=0;mj2<7;mj2++){
       var md=addDays(new Date(),mj2),mk=iso(md),mlist=by[mk]||[];
       if(!mlist.length&&mj2!==0)continue;
-      h+='<div class="gday"><div class="gdh'+(mj2===0?' today':'')+'"><span>'+esc(md.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"}))+'</span>'+(mj2===0?'<span>Today</span>':'')+'</div>';
+      var mgurl="https://calendar.google.com/calendar/r/day/"+md.getFullYear()+"/"+(md.getMonth()+1)+"/"+md.getDate();
+      h+='<div class="gday"><a class="gdh'+(mj2===0?' today':'')+'" href="'+mgurl+'" target="_blank" rel="noopener"><span>'+esc(md.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"}))+'</span>'+(mj2===0?'<span>Today</span>':'')+'</a>';
       if(!mlist.length)h+='<div class="empty">–</div>';
       else h+='<ul>'+mlist.map(function(e){return '<li><b>'+(e.allDay?'All day':esc(hhmm(e.start)))+'</b><span>'+esc(e.title)+'</span></li>'}).join("")+'</ul>';
       h+='</div>';
@@ -645,6 +660,8 @@ function vSchool(){
   h+='<div class="row schoolfilters" style="margin-bottom:8px"><button class="'+(schoolFilter===""?"btn":"ghost")+'" data-act="schoolFilter" data-id="">Everyone</button>'+state.members.map(function(m){return '<button class="'+(schoolFilter===m.id?"btn":"ghost")+'" data-act="schoolFilter" data-id="'+m.id+'">'+esc(m.name)+'</button>'}).join("")+'</div>';
   if(!state.members.length)h+='<div class="empty">Add your children as family members on the Today tab first.</div>';
   h+=schoolWeekTable(schoolWeek,schoolFilter);
+  var wn=weekNotesFor(iso(schoolWeek),schoolFilter);
+  if(wn.length)h+='<div class="wnhead" style="margin-top:12px">Week notes</div>'+wn.map(weekNoteHtml).join("");
   var docs=(state.docs||[]).filter(function(d){return !schoolFilter||!d.who||d.who===schoolFilter});
   if(docs.length)h+='<div class="docsrow">'+docs.slice().reverse().map(function(d){return '<a href="'+esc(d.url)+'" target="_blank" rel="noopener">'+esc(d.label)+(d.who?' · '+esc(nameOf(d.who)):'')+' PDF</a>'}).join("")+'</div>';
   h+='</div>';

@@ -29,8 +29,9 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Tabs: Today, Calendar, Dinner (dinner-only planner + recipes + AI ideas), Shopping (Bring! mirror + Hub list), School, More (chores, notes, contacts, backup).
 - Storage: `GET/PUT /api/state` against D1 table `kv` (row id `family`), client polls every 15 s and on focus; last writer wins.
 - Config: D1 binding `DB` and table `kv` exist; KV binding `SCHOOL` points at namespace `familyhub-school` (`99c2fdf65a324d1f8343aa581184f2cb`); `TEAM_DOMAIN` = `cold-dust-02c3.cloudflareaccess.com` and `POLICY_AUD` = `8ba3272a…f87d32c` are set on the Pages project; the `AI` binding exists. These were copied to the new `familien-ds` project through the Pages API; `GCAL_ICS_URL` was copied with `wrangler pages secret put`. Important: Pages Git builds ignore `[vars]`, and KV bindings from `wrangler.toml` did not apply either, so project config must be set through the API/dashboard. `BRING_EMAIL` / `BRING_PASSWORD` are not set, so Bring! returns 501.
-- Google Calendar: connected read-only via the `GCAL_ICS_URL` secret (calendar “Familien DDS”, 493 events). The real feed was parsed locally with `lib/ical.js`; the UI verification still needs a logged-in session.
-- Live data: family members Solvei (1. trinn) and Ellinor (4. trinn); the week 45 school plan is imported (14 items) plus 3 notes. Ellinor is in B class, so the week 46 gym reminder is on Monday 9.11.
+- Google Calendar: connected read-only via the `GCAL_ICS_URL` secret (calendar “Familien DDS”, 493 events). Every event is shown (no hidden “+ n” rows); long titles wrap, and each day plus “Open calendar” links to Google Calendar.
+- Week notes: school goals/reminders live in `state.weekNotes` (child, Monday date, text) and render in a narrow strip under the Today calendar and in the School tab. More → Notes is for general household notes only.
+- Live data: family members Solvei (1. trinn) and Ellinor (4. trinn); the week 45 school plan is imported (14 items) plus 3 week notes shown under the Today calendar. Ellinor is in B class, so the week 46 gym reminder is on Monday 9.11.
 - Dinner planner: breakfast and lunch removed; recipes store `minutes` and optional day preferences (colored tags, per-row day toggles; 70% of suggestion runs keep tagged dishes on their days, 30% are a free mix); “⚡ Quick week (≤30 min)” fills only quick recipes; AI ideas target ordinary Norwegian supermarket ingredients and short cooking times.
 - Mobile: under 700px the Google Calendar and ukeplan switch to vertical lists instead of the squeezed horizontal grids; desktop keeps the dense strips. The School header is Prev / week / Next.
 - School-letter intake: share a PDF from the phone into iCloud Drive `FamilyHub/Inbox` or Google Drive `My Drive/FamilyHub/Inbox`. The LaunchAgent watcher `com.familyhub.school-inbox` extracts it into `imports/pending/`, uploads the PDF to KV, and notifies; the import is reviewed before it is merged.
@@ -291,3 +292,9 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - The status bar appends **“ · day tags kept”** or **“ · free mix”** when any recipe has day tags, so the mode is visible.
 - Verified locally with a forced test override: respect mode placed weekday dishes Mon–Thu and weekend dishes Fri–Sat; the override was removed before shipping.
 - The recipe form hint now explains the 70/30 behaviour.
+
+### 2026-11-02 · Entry 28 · Ukeplan notes on Today; full calendar
+- Moved the three school notes from general `notes` to a new `weekNotes` array (child, week Monday, text). They render in a narrow strip under the Today calendar and under the School ukeplan; More → Notes no longer contains school material.
+- Extended `scripts/import-school.mjs` with `weekNotes` (keeps `removeNotes`); migrated the live data: 3 notes removed, 3 week notes added.
+- Google Calendar: removed the 4-event cap and the non-clickable “+ n”. All events show, titles wrap, and the strip grows vertically. Each day cell and the mobile day header link to Google Calendar for that date; the card header has an “Open calendar” link.
+- Verified locally with the real state and iCal feed at desktop and mobile.

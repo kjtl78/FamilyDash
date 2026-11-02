@@ -46,9 +46,10 @@ const state = row?.state
   ? JSON.parse(row.state)
   : {
       members: [], events: [], meals: {}, shopping: [], chores: [], notes: [], contacts: [],
-      recipes: [], staples: [...STAPLES], school: [], rejected: [], docs: [],
+      recipes: [], staples: [...STAPLES], school: [], rejected: [], docs: [], weekNotes: [],
     };
 if (!Array.isArray(state.docs)) state.docs = [];
+if (!Array.isArray(state.weekNotes)) state.weekNotes = [];
 const now = new Date().toISOString();
 
 const findMember = (name) => {
@@ -115,6 +116,18 @@ for (const doc of input.docs || []) {
   addedDocs++;
 }
 
+let addedWeekNotes = 0;
+for (const n of input.weekNotes || []) {
+  const text = String(n.text || "").trim();
+  const week = String(n.week || "").trim();
+  if (!text || !/^\d{4}-\d{2}-\d{2}$/.test(week)) continue;
+  const member = n.child ? findMember(n.child) : null;
+  const who = member ? member.id : "";
+  if (state.weekNotes.some((x) => x.who === who && x.week === week && x.text === text)) continue;
+  state.weekNotes.push({ id: uid(), who, week, text });
+  addedWeekNotes++;
+}
+
 const sqlPath = join(tmpdir(), "familyhub-school-import.sql");
 writeFileSync(
   sqlPath,
@@ -123,6 +136,6 @@ writeFileSync(
 );
 run(["d1", "execute", "familyhub", "--remote", "--yes", "--file", sqlPath]);
 
-console.log(`✓ ${state.members.length} member(s), ${addedSchool} new school item(s), ${addedNotes} new note(s), ${removedNotes} note(s) removed, ${addedDocs} new document(s).`);
+console.log(`✓ ${state.members.length} member(s), ${addedSchool} new school item(s), ${addedNotes} new note(s), ${removedNotes} note(s) removed, ${addedDocs} new document(s), ${addedWeekNotes} week note(s).`);
 const skipped = (input.school || []).length - addedSchool;
 if (skipped > 0) console.log(`  ${skipped} duplicate school item(s) skipped.`);
