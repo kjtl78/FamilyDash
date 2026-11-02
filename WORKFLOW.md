@@ -48,6 +48,21 @@ npx wrangler pages secret put BRING_PASSWORD --project-name familyhub
 
 Optional: `BRING_LIST_NAME`, `AI_MODEL`. Changes to secrets apply on the next deploy.
 
+## School letter from your phone
+
+Save the PDF from the school app's share sheet into either synced inbox:
+
+- **iCloud Drive** → `FamilyHub/Inbox`
+- **Google Drive** → `My Drive/FamilyHub/Inbox`
+
+The Mac watcher (`scripts/school-inbox.mjs`, installed as LaunchAgent `com.familyhub.school-inbox`) detects it, extracts the layout-preserving text into `imports/pending/`, moves the PDF to `Processed/`, and shows a notification. Then say “new school letter” in chat; the import is reviewed and merged with `scripts/import-school.mjs`.
+
+Reinstall or restart the watcher with:
+
+```bash
+./scripts/install-inbox-watcher.sh
+```
+
 ## School PDF import
 
 1. Send the week letter PDF in chat.

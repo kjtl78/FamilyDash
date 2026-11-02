@@ -31,6 +31,7 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Config: D1 binding `DB` and table `kv` exist. `TEAM_DOMAIN` = `cold-dust-02c3.cloudflareaccess.com` and `POLICY_AUD` = `8ba3272a…f87d32c` are set on the Pages project, and the `AI` binding exists. Important: Pages Git builds ignore `[vars]` in `wrangler.toml`, so environment variables must be set in the dashboard or with the Pages API. `GCAL_ICS_URL`, `BRING_EMAIL` and `BRING_PASSWORD` secrets are not set, so Calendar and Bring! return 501.
 - Google Calendar: connected read-only via the `GCAL_ICS_URL` secret (calendar “Familien DDS”, 493 events). The real feed was parsed locally with `lib/ical.js`; the UI verification still needs a logged-in session.
 - Live data: family members Solvei (1. trinn) and Ellinor (4. trinn); the week 45 school plan is imported (14 items) plus 3 notes about weekly goals and the week 46 gym day.
+- School-letter intake: share a PDF from the phone into iCloud Drive `FamilyHub/Inbox` or Google Drive `My Drive/FamilyHub/Inbox`. The LaunchAgent watcher `com.familyhub.school-inbox` extracts it into `imports/pending/` and notifies; the import is reviewed before it is merged.
 
 ## Architecture
 - One HTML file, no build step. Tabs: Today, Calendar, Meals, Shopping, Chores, Info (notes and contacts).
@@ -82,6 +83,8 @@ Recommended: **Cloudflare Pages** + **Pages Functions** + **D1** (or KV) for sha
 - [ ] Privacy guardrails from Entry 5 (Access on both site and `/api/*`, no trackers, minimal data).
 - [x] Weekly school import: week 45 loaded for Solvei (1. trinn) and Ellinor (4. trinn); `scripts/import-school.mjs` makes future weeks one command.
 - [ ] Confirm whether Ellinor is in A-class or B-class for the week 46 gym day (Mon 9.11 vs Tue 10.11).
+- [ ] Test the iPhone share-to-inbox flow end to end (school app → Save to Files/Drive → `FamilyHub/Inbox`).
+- [ ] Decide later whether AI-assisted auto-import is trusted enough; it misread the 1st-grade columns once, so imports stay reviewed for now.
 - [ ] Optional: birthdays, recurring chores, pinned weekly menu, shopping list download, conflict-safe saves.
 
 ---
@@ -187,3 +190,11 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - PDF text was extracted locally with `pypdf`; the model cannot read PDF attachments directly.
 - Updated the School tab instruction text to say the PDF is imported in chat.
 - Open: Ellinor's A/B class for the week 46 gym day; confirm the Calendar tab after logging in.
+
+### 2026-11-02 · Entry 15 · One-share school-letter inbox
+- Created synced inboxes: iCloud Drive `FamilyHub/Inbox` and Google Drive `My Drive/FamilyHub/Inbox`, each with `Processed/`.
+- Added `scripts/school-inbox.mjs` and `scripts/install-inbox-watcher.sh`; installed the user LaunchAgent `com.familyhub.school-inbox` (RunAtLoad, KeepAlive) watching both inboxes every 20 s. It waits for cloud sync to settle, extracts layout-preserving text with pypdf into `imports/pending/`, moves the PDF to `Processed/`, records a SHA-256 in `~/.local/state/familyhub/processed.json`, and shows a macOS notification.
+- Tested with `Ukebrev 45.pdf` dropped into the iCloud inbox: 2,510 characters extracted and the PDF moved. Test artefacts removed and state reset.
+- Auto-import is deliberately not enabled: Workers AI extraction was good for the 4th-grade letter but misread the 1st-grade homework columns and occasionally added items not in the letter. Imports stay reviewed with `scripts/import-school.mjs`.
+- The Mac must be awake to process; the cloud delivers the file whenever it wakes.
+- Open: the user tests the iPhone share sheet into `FamilyHub/Inbox`.
