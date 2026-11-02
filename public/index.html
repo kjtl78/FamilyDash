@@ -484,7 +484,7 @@ function vSchool(){
   h+='</div>';
   h+='<div class="grid" style="margin-top:14px"><div class="card"><h2>Add homework or activity</h2><div class="row"><select id="schoolWho">'+state.members.map(function(m){return '<option value="'+m.id+'">'+esc(m.name)+'</option>'}).join("")+'</select><input type="date" id="schoolDate" value="'+esc(iso(new Date()))+'"><select id="schoolType"><option value="homework">Homework</option><option value="activity">Activity</option><option value="event">School event</option></select></div>'+
     '<div class="row" style="margin-top:8px"><input type="text" id="schoolTitle" placeholder="e.g. Maths p. 45, swimming kit"><button class="btn" data-act="addSchool">Add</button></div></div>';
-  h+='<div class="card"><h2>Import from the school PDF</h2><div style="color:var(--muted);font-size:13px;margin-bottom:6px">Send the PDF to Claude in chat and ask for a Family Hub import. Paste the result here. Names must match your family members.</div>'+
+  h+='<div class="card"><h2>Import from the school PDF</h2><div style="color:var(--muted);font-size:13px;margin-bottom:6px">Send the week letter (PDF) in chat and it is imported for you. You can also paste JSON here. Names must match your family members.</div>'+
     '<textarea id="schoolImport" rows="5" style="width:100%" placeholder=\'[{"child":"Emma","date":"2026-11-03","type":"homework","title":"Maths p.45","subject":"Maths"}]\'></textarea><div class="row" style="margin-top:8px"><button class="btn" data-act="importSchool">Import</button></div>'+
     (importMsg?'<div style="margin-top:8px;font-size:13px">'+esc(importMsg)+'</div>':'')+'</div></div>';
   return h;

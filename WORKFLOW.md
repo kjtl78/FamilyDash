@@ -48,6 +48,18 @@ npx wrangler pages secret put BRING_PASSWORD --project-name familyhub
 
 Optional: `BRING_LIST_NAME`, `AI_MODEL`. Changes to secrets apply on the next deploy.
 
+## School PDF import
+
+1. Send the week letter PDF in chat.
+2. I extract the text, map each class to the child, and write a local file under `imports/` (git-ignored — it contains family data).
+3. Merge it into the live Hub:
+
+```bash
+node scripts/import-school.mjs imports/week45.json
+```
+
+The importer adds missing family members, adds homework/activities/events, skips duplicates, and appends notes. It writes straight to D1, so the Hub shows it on the next poll.
+
 ## Rules
 
 - `HANDOVER.md` is the project memory: append an entry for every change and keep **Current state** and **Open items** accurate.

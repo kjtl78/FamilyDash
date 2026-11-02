@@ -29,7 +29,8 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Tabs: Today, Calendar, Meals (planner + recipes + AI ideas), Shopping (Bring! mirror + Hub list), School, More (chores, notes, contacts, backup).
 - Storage: `GET/PUT /api/state` against D1 table `kv` (row id `family`), client polls every 15 s and on focus; last writer wins.
 - Config: D1 binding `DB` and table `kv` exist. `TEAM_DOMAIN` = `cold-dust-02c3.cloudflareaccess.com` and `POLICY_AUD` = `8ba3272a…f87d32c` are set on the Pages project, and the `AI` binding exists. Important: Pages Git builds ignore `[vars]` in `wrangler.toml`, so environment variables must be set in the dashboard or with the Pages API. `GCAL_ICS_URL`, `BRING_EMAIL` and `BRING_PASSWORD` secrets are not set, so Calendar and Bring! return 501.
-- Google Calendar connector: still not confirmed.
+- Google Calendar: connected read-only via the `GCAL_ICS_URL` secret (calendar “Familien DDS”, 493 events). The real feed was parsed locally with `lib/ical.js`; the UI verification still needs a logged-in session.
+- Live data: family members Solvei (1. trinn) and Ellinor (4. trinn); the week 45 school plan is imported (14 items) plus 3 notes about weekly goals and the week 46 gym day.
 
 ## Architecture
 - One HTML file, no build step. Tabs: Today, Calendar, Meals, Shopping, Chores, Info (notes and contacts).
@@ -74,11 +75,13 @@ Recommended: **Cloudflare Pages** + **Pages Functions** + **D1** (or KV) for sha
 - [x] Access added to `familyhub-84t.pages.dev` (team `cold-dust-02c3`, app AUD `8ba3272a…f87d32c`); login method is Cloudflare.
 - [ ] Add the remaining family members to the Access policy (only `sagstad@gmail.com` is allowed so far).
 - [ ] Consider making the GitHub repository private (currently public; keep secrets and family data out).
-- [ ] Add `GCAL_ICS_URL` secret and verify `/api/calendar` on a real feed.
+- [x] Add `GCAL_ICS_URL` secret; the real “Familien DDS” feed (493 events) parses correctly with `lib/ical.js`.
+- [ ] Confirm the Calendar tab shows the next 7 days after logging in.
 - [ ] Add `BRING_EMAIL` / `BRING_PASSWORD` secrets and verify `/api/bring` (unofficial API, untested).
 - [ ] Verify the Workers AI binding and model `@cf/meta/llama-3.3-70b-instruct-fp8-fast` after the first deploy (override with `AI_MODEL`).
 - [ ] Privacy guardrails from Entry 5 (Access on both site and `/api/*`, no trackers, minimal data).
-- [ ] User to send the first school PDF + children's first names (add them as family members first).
+- [x] Weekly school import: week 45 loaded for Solvei (1. trinn) and Ellinor (4. trinn); `scripts/import-school.mjs` makes future weeks one command.
+- [ ] Confirm whether Ellinor is in A-class or B-class for the week 46 gym day (Mon 9.11 vs Tue 10.11).
 - [ ] Optional: birthdays, recurring chores, pinned weekly menu, shopping list download, conflict-safe saves.
 
 ---
@@ -176,3 +179,11 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - Reported: typing a new recipe cleared the fields at random. Cause: `pull()` repainted the whole view after every 15 s poll, even when the remote state had not changed. Recipe inputs live only in the DOM until **Add recipe** is pressed, so the repaint rebuilt them empty.
 - `pull()` now repaints only on first load or when the fetched state actually differs; remote changes use `softRender()`, which already skips while an input is focused.
 - Needs user verification: type a recipe slowly for more than 30 s and confirm nothing clears.
+
+### 2026-11-02 · Entry 14 · Google Calendar connected; week 45 school plan imported
+- Read the secret iCal address from the user's Desktop file and stored it as the `GCAL_ICS_URL` secret on the Pages project. Feed is “Familien DDS” with 493 events; `expandWeek` returned 9 events for 2–8 Nov 2026, so the parser handles the real calendar. The secret was set after the last deploy, so it takes effect on the next deploy.
+- Added `scripts/import-school.mjs` (merges members, school items and notes into the live D1 `kv` state, skipping duplicates) and documented it in `WORKFLOW.md`. Import JSON files live in the git-ignored `imports/` folder because they contain family data.
+- Imported week 45: members Solvei (1. trinn) and Ellinor (4. trinn); 8 school items for Solvei, 6 for Ellinor, plus 3 notes (weekly goals, English vocabulary, week 46 gym day). Corrected the earlier guess: 1. trinn is Solvei, 4. trinn is Ellinor.
+- PDF text was extracted locally with `pypdf`; the model cannot read PDF attachments directly.
+- Updated the School tab instruction text to say the PDF is imported in chat.
+- Open: Ellinor's A/B class for the week 46 gym day; confirm the Calendar tab after logging in.
