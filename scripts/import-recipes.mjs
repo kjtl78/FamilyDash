@@ -36,6 +36,11 @@ function run(args) {
 }
 const uid = () => crypto.randomUUID().replace(/-/g, "").slice(0, 8);
 const esc = (s) => String(s).replace(/'/g, "''");
+const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+const normDays = (a) =>
+  (Array.isArray(a) ? a : [])
+    .map((d) => (typeof d === "number" ? d : DAYS.indexOf(String(d).toLowerCase().slice(0, 3))))
+    .filter((n) => n >= 0 && n <= 6);
 const minutesOf = (r) => {
   const m = +((r && r.minutes) || 0);
   if (m >= 5) return m;
@@ -64,6 +69,7 @@ for (const r of input.recipes || []) {
   const rating = Math.min(5, Math.max(1, +r.rating || 3));
   const ingredients = (Array.isArray(r.ingredients) ? r.ingredients : []).map((x) => String(x).trim()).filter(Boolean).slice(0, 40);
   const notes = String(r.notes || "").slice(0, 300);
+  const days = normDays(r.days);
 
   const existing = state.recipes.find((x) => String(x.name).trim().toLowerCase() === name.toLowerCase());
   if (existing) {
@@ -72,9 +78,10 @@ for (const r of input.recipes || []) {
     existing.rating = rating;
     existing.ingredients = ingredients;
     existing.notes = notes;
+    existing.days = days;
     updated++;
   } else {
-    state.recipes.push({ id: uid(), name, effort, minutes, rating, ingredients, notes, lastMade: "" });
+    state.recipes.push({ id: uid(), name, effort, minutes, rating, ingredients, notes, lastMade: "", days });
     added++;
   }
 }

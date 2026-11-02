@@ -398,6 +398,7 @@ var ideas=[], ideasBusy=false, ideasErr="";
 var editRecipe=null, schoolWeek=mondayOf(new Date()), schoolFilter="", importMsg="";
 var EFFORT={1:"Easy",2:"Medium",3:"Involved"};
 var MINUTES=[15,20,25,30,40,45,60,90];
+var DAYNAMES=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 function minutesOf(r){var m=+((r&&r.minutes)||0);if(m>=10)return m;var e=(r&&r.effort)||1;return e===1?30:(e===3?60:45)}
 
 function softRender(){var a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&$("view").contains(a))return;render()}
@@ -483,11 +484,12 @@ function suggestDinners(overwrite, quickOnly){
     else targets.push(d);
   });
   targets.forEach(function(d){
-    var weekday=((d.getDay()+6)%7)<4,best=null,bs=-1e9;
+    var dow=(d.getDay()+6)%7,weekday=dow<4,best=null,bs=-1e9;
     var curName=((state.meals[iso(d)]||{}).d||"").trim();
     var curRecipe=curName?findRecipe(curName):null;
     pool.forEach(function(r){
       if(used[r.id])return;
+      if((r.days||[]).length&&(r.days||[]).indexOf(dow)<0)return;
       var sc=(r.rating||3)*2;
       var since=r.lastMade?Math.round((d-parse(r.lastMade))/864e5):30;if(since<0)since=30;
       sc+=Math.min(since,30)/6;if(since<7)sc-=4;
@@ -532,6 +534,7 @@ function vRecipes(){
     '<div class="row" style="margin-top:8px"><select id="rEffort">'+[1,2,3].map(function(n){return '<option value="'+n+'"'+((er?er.effort:1)===n?" selected":"")+'>'+EFFORT[n]+'</option>'}).join("")+'</select>'+
     '<select id="rMinutes" title="Time">'+MINUTES.map(function(n){var cur=er?minutesOf(er)===n:(n===30);return '<option value="'+n+'"'+(cur?" selected":"")+'>'+n+' min</option>'}).join("")+'</select>'+
     '<select id="rRating">'+[5,4,3,2,1].map(function(n){return '<option value="'+n+'"'+((er?er.rating:3)===n?" selected":"")+'>'+stars(n)+'</option>'}).join("")+'</select></div>'+
+    '<div class="row" id="rDays" style="margin-top:8px;gap:4px" title="Leave all unchecked for any day"><span style="font-size:12px;color:var(--muted);flex:0 0 auto">Only on:</span>'+DAYNAMES.map(function(n,i){var on=er&&(er.days||[]).indexOf(i)>=0;return '<label class="chip" style="display:flex;align-items:center;gap:3px;padding:3px 6px"><input type="checkbox" data-day="'+i+'" style="width:14px;height:14px;min-height:0;margin:0"'+(on?" checked":"")+'>'+n+'</label>'}).join("")+'</div>'+
     '<textarea id="rIngr" rows="6" style="width:100%;margin-top:8px" placeholder="Ingredients, one per line">'+esc(er?er.ingredients.join("\n"):"")+'</textarea>'+
     '<input type="text" id="rNotes" style="width:100%;margin-top:8px" placeholder="Notes or link (optional)" value="'+esc(er&&er.notes?er.notes:"")+'">'+
     '<div class="row" style="margin-top:8px"><button class="btn" data-act="saveRecipe">'+(er?"Save":"Add recipe")+'</button>'+(er?'<button class="ghost" data-act="cancelRecipe">Cancel</button>':"")+'</div></div>';
@@ -541,7 +544,9 @@ function vRecipes(){
   if(!state.recipes.length)h+='<div class="empty">No recipes yet. Add the dishes you cook often; the planner suggests from these.</div>';
   else h+='<ul class="list">'+state.recipes.slice().sort(function(a,b){return a.name.localeCompare(b.name)}).map(function(r){
     var sp=specialsOf(r);
+    var dayText=(r.days||[]).map(function(n){return DAYNAMES[n]}).join(", ");
     return '<li style="align-items:flex-start"><span class="t"><b>'+esc(r.name)+'</b> <span class="chip">'+EFFORT[r.effort||1]+' · '+minutesOf(r)+' min</span> <span class="chip">'+stars(r.rating||3)+'</span>'+
+      (dayText?' <span class="chip">'+esc(dayText)+' only</span>':'')+
       (r.lastMade?' <span class="chip">made '+esc(parse(r.lastMade).toLocaleDateString(undefined,{day:"numeric",month:"short"}))+'</span>':'')+
       '<div style="color:var(--muted);font-size:12px;margin-top:2px">'+(sp.length?'Needs: '+esc(sp.join(", ")):'Only everyday ingredients')+(r.notes?' · '+esc(r.notes):'')+'</div></span>'+
       '<span class="row" style="flex:0 0 auto"><button class="ghost" data-act="madeToday" data-id="'+r.id+'">Made today</button><button class="ghost" data-act="editRecipe" data-id="'+r.id+'">Edit</button><button class="x" data-act="delRecipe" data-id="'+r.id+'">×</button></span></li>'}).join("")+'</ul>';
@@ -645,8 +650,9 @@ var actions={
     var name=val("rName");if(!name)return;
     var ingr=($("rIngr").value||"").split("\n").map(function(x){return x.trim()}).filter(Boolean);
     var effort=+val("rEffort")||1;
-    var rec={name:name,effort:effort,minutes:+val("rMinutes")||minutesOf({effort:effort}),rating:+val("rRating")||3,ingredients:ingr,notes:val("rNotes")};
-    if(editRecipe){state.recipes.forEach(function(r){if(r.id===editRecipe){r.name=rec.name;r.effort=rec.effort;r.minutes=rec.minutes;r.rating=rec.rating;r.ingredients=rec.ingredients;r.notes=rec.notes}});editRecipe=null}
+    var days=[].slice.call(document.querySelectorAll("#rDays input:checked")).map(function(el){return +el.dataset.day});
+    var rec={name:name,effort:effort,minutes:+val("rMinutes")||minutesOf({effort:effort}),rating:+val("rRating")||3,ingredients:ingr,notes:val("rNotes"),days:days};
+    if(editRecipe){state.recipes.forEach(function(r){if(r.id===editRecipe){r.name=rec.name;r.effort=rec.effort;r.minutes=rec.minutes;r.rating=rec.rating;r.ingredients=rec.ingredients;r.notes=rec.notes;r.days=rec.days}});editRecipe=null}
     else{rec.id=uid();rec.lastMade="";state.recipes.push(rec)}
     changed();
   },
@@ -663,12 +669,12 @@ var actions={
   },
   addIdea:function(el){
     var x=ideas[+el.dataset.i];if(!x)return;
-    state.recipes.push({id:uid(),name:x.name,effort:x.effort,minutes:x.minutes||minutesOf(x),rating:3,ingredients:x.ingredients,notes:"AI idea – check before cooking",lastMade:""});
+    state.recipes.push({id:uid(),name:x.name,effort:x.effort,minutes:x.minutes||minutesOf(x),rating:3,ingredients:x.ingredients,notes:"AI idea – check before cooking",lastMade:"",days:[]});
     ideas.splice(+el.dataset.i,1);changed();
   },
   useIdea:function(el){
     var x=ideas[+el.dataset.i];if(!x)return;
-    state.recipes.push({id:uid(),name:x.name,effort:x.effort,minutes:x.minutes||minutesOf(x),rating:3,ingredients:x.ingredients,notes:"AI idea – check before cooking",lastMade:""});
+    state.recipes.push({id:uid(),name:x.name,effort:x.effort,minutes:x.minutes||minutesOf(x),rating:3,ingredients:x.ingredients,notes:"AI idea – check before cooking",lastMade:"",days:[]});
     fillNextDinner(x.name);
     ideas.splice(+el.dataset.i,1);changed();
   },
