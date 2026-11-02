@@ -22,7 +22,7 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Work account (organisation: 4subsea). Org sharing settings may limit who can open the Claude-hosted link.
 
 ## Current state (update this section on every change)
-- Status: LIVE. GitHub `kjtl78/FamilyDash` (branch `main`, public) is Git-connected to Cloudflare Pages project `familyhub` → https://familyhub-84t.pages.dev. Production deploy `90d9e1b` was live on 2026-11-02; every push to `main` rebuilds and deploys.
+- Status: LIVE. GitHub `kjtl78/FamilyDash` (branch `main`, public) is Git-connected to Cloudflare Pages project `familyhub` → https://familyhub-84t.pages.dev. Latest verified deploy `8a55329` was live on 2026-11-02; every push to `main` rebuilds and deploys.
 - Family site: https://familyhub-84t.pages.dev is the chosen household site, protected by Cloudflare Access team `cold-dust-02c3` (application AUD `8ba3272a992d27f6fe1b07b5c29d109f607a6767d0f7d5156e9cf9de8f87d32c`). The login method is **Sign in with Cloudflare**. The older `familydash.pages.dev` site (Access team `lionfishky`) belongs to a different account and is no longer used.
 - Update loop: `npm run ship -- "message"` checks, commits, pushes, waits for the deployment and verifies the site (`WORKFLOW.md`).
 - Cloudflare project layout: `public/index.html`, `functions/api/_middleware.js` (Access JWT check, fails closed), `functions/api/state.js` (GET/PUT, D1), `lib/ical.js`, `functions/api/calendar.js`, `functions/api/bring.js`, `functions/api/ideas.js`, `schema.sql`, `wrangler.toml`, `scripts/check.mjs`, `scripts/ship.mjs`, `README.md`, `WORKFLOW.md`.
@@ -166,3 +166,8 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - Replaced the old `lionfishky` / `b8e436…` values in `wrangler.toml` and on the Pages project with the new team and AUD. D1 `DB` and AI `AI` bindings preserved.
 - `familydash.pages.dev` and its `lionfishky` Access team belong to a different account and are no longer part of this project.
 - Still to verify after this deploy: a real login through Access, saving/loading state, and the AI ideas button.
+
+### 2026-11-02 · Entry 12 · Deploy check now understands Access
+- `scripts/ship.mjs` required the live URL to answer `200`. With Access enabled the site correctly answers `302` to the login page, so the workflow stopped reporting success. The check now treats a `302` to `*.cloudflareaccess.com` as a successful, protected deploy.
+- Verified after deploy `8a55329`: site answers `302` → `cold-dust-02c3.cloudflareaccess.com`; the login page answers `200` and offers **Sign in with Cloudflare**; project vars `TEAM_DOMAIN` / `POLICY_AUD` are the new values; D1 `DB` and AI `AI` bindings survived the deploy.
+- Pending user test: sign in with Cloudflare, save something, reload, and confirm it persists.
