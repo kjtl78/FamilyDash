@@ -28,7 +28,7 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Cloudflare project layout: `public/index.html`, `functions/api/_middleware.js` (Access JWT check, fails closed), `functions/api/state.js` (GET/PUT, D1), `lib/ical.js`, `functions/api/calendar.js`, `functions/api/bring.js`, `functions/api/ideas.js`, `schema.sql`, `wrangler.toml`, `scripts/check.mjs`, `scripts/ship.mjs`, `README.md`, `WORKFLOW.md`.
 - Tabs: Today, Calendar, Meals (planner + recipes + AI ideas), Shopping (Bring! mirror + Hub list), School, More (chores, notes, contacts, backup).
 - Storage: `GET/PUT /api/state` against D1 table `kv` (row id `family`), client polls every 15 s and on focus; last writer wins.
-- Config: D1 binding `DB` and table `kv` exist. `TEAM_DOMAIN`, `POLICY_AUD` and the Workers AI binding `AI` were added to `wrangler.toml` in Entry 9; verification after the first `npm run ship` was still pending when this entry was written. `GCAL_ICS_URL`, `BRING_EMAIL` and `BRING_PASSWORD` secrets are not set, so Calendar and Bring! return 501.
+- Config: D1 binding `DB` and table `kv` exist. `TEAM_DOMAIN` / `POLICY_AUD` are set on the Pages project and the `AI` binding exists; `/api/state` now answers 401 without an Access JWT (was 503). Important: Pages Git builds ignore `[vars]` in `wrangler.toml`, so environment variables must be set in the dashboard or with the Pages API. `GCAL_ICS_URL`, `BRING_EMAIL` and `BRING_PASSWORD` secrets are not set, so Calendar and Bring! return 501.
 - Google Calendar connector: still not confirmed.
 
 ## Architecture
@@ -151,3 +151,11 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - `familydash.pages.dev` is behind Access team `lionfishky` but is NOT in this Cloudflare account (only one membership is visible). Its AUD tag was used for `POLICY_AUD`.
 - `familyhub-84t.pages.dev` is currently public and unprotected; the API still refuses without an Access JWT. The GitHub repository is also public.
 - Still unverified when this entry was written: the first `npm run ship` deployment, the Access-protected site, the AI model name, Google Calendar and Bring! (secrets missing).
+
+### 2026-11-02 · Entry 10 · Workflow proven; Cloudflare config applied
+- First `npm run ship -- "Add one-command update workflow"` succeeded: commit `f5b4fef`, push to `main`, Cloudflare build `4b915ac2`, live check `200`. The loop now works end to end.
+- `/api/*` still returned 503 after that deploy. Pages **Git builds do not apply `[vars]` from `wrangler.toml`** (D1 and the AI binding did apply). Set `TEAM_DOMAIN` and `POLICY_AUD` on the Pages project through the API; retried the deployment.
+- After the retry, the project has `env_vars` `TEAM_DOMAIN`, `POLICY_AUD`, D1 `DB`, and `ai_bindings` `AI`. `/api/state` now returns **401 Unauthorized** without an Access JWT, which is the expected closed state.
+- Unresolved: the account we control owns `familyhub-84t.pages.dev` only. `familydash.pages.dev` (Access team `lionfishky`) is in a different Cloudflare account, so a push from here may not update that site. Decide which one is the household site.
+- `familyhub-84t.pages.dev` remains public and has no Access application, so its API refuses saves. It is a working deployment target, not yet a usable family site.
+- AI model name `@cf/meta/llama-3.3-70b-instruct-fp8-fast` still unverified; the binding exists.
