@@ -60,6 +60,9 @@ button.x:hover{color:var(--danger)}
 .shopmode .list input[type=checkbox]{width:28px;height:28px;min-height:0}
 .shopmode .list .t{font-size:17px}
 .shopmode .x{display:none}
+.bigshop{display:block;width:100%;margin:6px 0 12px;padding:14px 18px;font-size:17px;border-radius:12px}
+.shoplinks{margin-top:12px;font-size:12px;color:var(--muted)}
+.textlink{color:var(--muted);text-decoration:underline;cursor:pointer}
 .empty{color:var(--muted);font-style:italic;padding:6px 0}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex:0 0 auto}
 .chip{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--surface2);color:var(--muted);white-space:nowrap}
@@ -463,7 +466,8 @@ function vDinnerLock(){
 }
 function vShop(){
   var h=vDinnerLock()+(shopMode?'':bringCard());
-  h+='<div class="card'+(shopMode?' shopmode':'')+'"><h2>Hub list <span class="row"><button class="ghost" data-act="shopMode">'+(shopMode?'Edit list':'Shopping mode')+'</button><button class="ghost" data-act="shareList">Share</button><button class="ghost" data-act="copyList">Copy</button>'+(shopMode?'':'<button class="ghost" data-act="clearDone">Clear checked</button>')+'</span></h2>';
+  h+='<div class="card'+(shopMode?' shopmode':'')+'"><h2>'+(shopMode?'Shopping list':'Hub list')+'</h2>';
+  h+='<button class="btn bigshop" data-act="shopMode">'+(shopMode?'✓ Done shopping':'🛒 Shopping mode')+'</button>';
   if(!shopMode)h+='<div class="row"><input type="text" id="shopText" placeholder="Add an item"><input type="text" id="shopQty" placeholder="Qty" style="max-width:90px;flex:0 0 90px"><select id="shopCat">'+CATS.map(function(c){return '<option>'+c+'</option>'}).join("")+'</select><button class="btn" data-act="addShop">Add</button></div>'+
     '<div class="row" style="margin-top:8px"><button class="ghost" data-act="mealsToShop">Add missing ingredients from this week</button></div>';
   if(!state.shopping.length)h+='<div class="empty" style="margin-top:10px">Nothing on the list yet.</div>';
@@ -472,6 +476,8 @@ function vShop(){
     if(!items.length)return;
     h+='<div class="cat">'+c+'</div><ul class="list">'+items.map(function(s){return '<li class="'+(s.done?"done":"")+'"><input type="checkbox" data-act="toggleShop" data-id="'+s.id+'"'+(s.done?" checked":"")+'><span class="t">'+esc(s.text)+(s.qty?' <span class="chip">'+esc(s.qty)+'</span>':'')+'</span><button class="x" data-act="delShop" data-id="'+s.id+'">×</button></li>'}).join("")+'</ul>';
   });
+  if(shopMode&&state.shopping.some(function(s){return s.done}))h+='<div class="row" style="margin-top:12px"><button class="ghost" data-act="clearDone">Clear checked</button></div>';
+  h+='<div class="shoplinks"><a class="textlink" data-act="shareList">Share list</a><span> · </span><a class="textlink" data-act="copyList">Copy list</a></div>';
   return h+'</div>';
 }
 

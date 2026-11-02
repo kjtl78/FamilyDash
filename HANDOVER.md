@@ -37,7 +37,7 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Mobile: under 700px the Google Calendar and ukeplan switch to vertical lists instead of the squeezed horizontal grids; desktop keeps the dense strips. Times are 24-hour, events have accent separators, and day headings are bold (today in blue). The School header is Prev / week / Next.
 - School-letter intake: share a PDF from the phone into iCloud Drive `FamilyHub/Inbox` or Google Drive `My Drive/FamilyHub/Inbox`. The LaunchAgent watcher `com.familyhub.school-inbox` extracts it into `imports/pending/`, uploads the PDF to KV, and notifies; the import is reviewed before it is merged.
 - Source PDFs: stored in the private KV namespace `familyhub-school` (binding `SCHOOL`) and served at `/api/pdf/<key>` behind Cloudflare Access. Week 45 letters are attached to Solvei and Ellinor in the School tab.
-- Shopping: the Hub list is primary, with quantities, categories, Shopping mode, Share/Copy, and add-missing-ingredients from the dinner plan. A Dinner plan card shows the week's meals and can lock/unlock the plan. The Bring! mirror is optional and read-only (credentials not set).
+- Shopping: the Hub list is primary, with quantities, categories, a full-width **Shopping mode** button, Share/Copy as text links, and add-missing-ingredients from the dinner plan. Clear checked appears only inside Shopping mode when something is ticked. A Dinner plan card shows the week's meals and can lock/unlock the plan. The Bring! mirror is optional and read-only (credentials not set).
 - Ukeplan reminder: the Hub shows a reminder card Friday–Sunday and a School-tab note when a week has no homework; LaunchAgent `com.familyhub.ukeplan-reminder` runs Sundays 18:00 and creates a Reminders task plus notification if the coming week has no homework/3 items.
 - Calendar: Hub events merge into the 7-day strip and Today with member badges. Google’s iCal feed is read-only, so Hub events are not written to Google.
 
@@ -334,3 +334,9 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - Swapped the day colour semantics: normal day/date headings are orange (`--accent`), today is blue (`--day`).
 - Applied to the 7-day strip headers and today outline, mobile day headings, ukeplan day labels/headers, month-grid day-of-week headings, today's month number and border, the selected-day heading, and the dinner-table today header.
 - Verified locally on mobile and desktop.
+
+### 2026-11-02 · Entry 34 · Shopping mode is the primary action
+- The Shopping tab now has a full-width **Shopping mode** button; inside shopping mode it becomes **Done shopping**.
+- Share/Copy moved to small text links at the bottom of the list.
+- Removed Clear checked from edit mode; in shopping mode it appears only when something is ticked. Individual X buttons remain the way to remove items while editing.
+- Verified at 390 px: big button, large checkboxes, Clear checked appears after ticking, subtle links.
