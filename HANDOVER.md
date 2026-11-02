@@ -28,10 +28,11 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Cloudflare project layout: `public/index.html`, `functions/api/_middleware.js` (Access JWT check, fails closed), `functions/api/state.js` (GET/PUT, D1), `lib/ical.js`, `functions/api/calendar.js`, `functions/api/bring.js`, `functions/api/ideas.js`, `schema.sql`, `wrangler.toml`, `scripts/check.mjs`, `scripts/ship.mjs`, `README.md`, `WORKFLOW.md`.
 - Tabs: Today, Calendar, Meals (planner + recipes + AI ideas), Shopping (Bring! mirror + Hub list), School, More (chores, notes, contacts, backup).
 - Storage: `GET/PUT /api/state` against D1 table `kv` (row id `family`), client polls every 15 s and on focus; last writer wins.
-- Config: D1 binding `DB` and table `kv` exist. `TEAM_DOMAIN` = `cold-dust-02c3.cloudflareaccess.com` and `POLICY_AUD` = `8ba3272a…f87d32c` are set on the Pages project, and the `AI` binding exists. Important: Pages Git builds ignore `[vars]` in `wrangler.toml`, so environment variables must be set in the dashboard or with the Pages API. `GCAL_ICS_URL`, `BRING_EMAIL` and `BRING_PASSWORD` secrets are not set, so Calendar and Bring! return 501.
+- Config: D1 binding `DB` and table `kv` exist; KV binding `SCHOOL` points at namespace `familyhub-school` (`99c2fdf65a324d1f8343aa581184f2cb`); `TEAM_DOMAIN` = `cold-dust-02c3.cloudflareaccess.com` and `POLICY_AUD` = `8ba3272a…f87d32c` are set on the Pages project; the `AI` binding exists. Important: Pages Git builds ignore `[vars]`, and KV bindings from `wrangler.toml` did not apply either, so these were set through the Pages API. `GCAL_ICS_URL` is set; `BRING_EMAIL` / `BRING_PASSWORD` are not, so Bring! returns 501.
 - Google Calendar: connected read-only via the `GCAL_ICS_URL` secret (calendar “Familien DDS”, 493 events). The real feed was parsed locally with `lib/ical.js`; the UI verification still needs a logged-in session.
 - Live data: family members Solvei (1. trinn) and Ellinor (4. trinn); the week 45 school plan is imported (14 items) plus 3 notes about weekly goals and the week 46 gym day.
-- School-letter intake: share a PDF from the phone into iCloud Drive `FamilyHub/Inbox` or Google Drive `My Drive/FamilyHub/Inbox`. The LaunchAgent watcher `com.familyhub.school-inbox` extracts it into `imports/pending/` and notifies; the import is reviewed before it is merged.
+- School-letter intake: share a PDF from the phone into iCloud Drive `FamilyHub/Inbox` or Google Drive `My Drive/FamilyHub/Inbox`. The LaunchAgent watcher `com.familyhub.school-inbox` extracts it into `imports/pending/`, uploads the PDF to KV, and notifies; the import is reviewed before it is merged.
+- Source PDFs: stored in the private KV namespace `familyhub-school` (binding `SCHOOL`) and served at `/api/pdf/<key>` behind Cloudflare Access. Week 45 letters are attached to Solvei and Ellinor in the School tab.
 
 ## Architecture
 - One HTML file, no build step. Tabs: Today, Calendar, Meals, Shopping, Chores, Info (notes and contacts).
@@ -82,6 +83,9 @@ Recommended: **Cloudflare Pages** + **Pages Functions** + **D1** (or KV) for sha
 - [ ] Verify the Workers AI binding and model `@cf/meta/llama-3.3-70b-instruct-fp8-fast` after the first deploy (override with `AI_MODEL`).
 - [ ] Privacy guardrails from Entry 5 (Access on both site and `/api/*`, no trackers, minimal data).
 - [x] Weekly school import: week 45 loaded for Solvei (1. trinn) and Ellinor (4. trinn); `scripts/import-school.mjs` makes future weeks one command.
+- [x] Source PDFs stored in KV `familyhub-school` and linked from the School tab for week 45.
+- [ ] Verify the “Open PDF” links work after signing in.
+- [ ] R2 is not enabled on the account; KV is used for school PDFs (fine for small files).
 - [ ] Confirm whether Ellinor is in A-class or B-class for the week 46 gym day (Mon 9.11 vs Tue 10.11).
 - [ ] Test the iPhone share-to-inbox flow end to end (school app → Save to Files/Drive → `FamilyHub/Inbox`).
 - [ ] Decide later whether AI-assisted auto-import is trusted enough; it misread the 1st-grade columns once, so imports stay reviewed for now.
@@ -198,3 +202,11 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - Auto-import is deliberately not enabled: Workers AI extraction was good for the 4th-grade letter but misread the 1st-grade homework columns and occasionally added items not in the letter. Imports stay reviewed with `scripts/import-school.mjs`.
 - The Mac must be awake to process; the cloud delivers the file whenever it wakes.
 - Open: the user tests the iPhone share sheet into `FamilyHub/Inbox`.
+
+### 2026-11-02 · Entry 16 · Source school PDFs behind Access
+- Created KV namespace `familyhub-school` (`99c2fdf65a324d1f8343aa581184f2cb`) and bound it as `SCHOOL` on the Pages project. Git builds did not apply the KV binding from `wrangler.toml`, so it was set through the Pages API (`kv_namespaces` → `{namespace_id}`).
+- Added `functions/api/pdf/[key].js`. The existing `/api/*` middleware requires an Access session, so the PDF links are private and stable.
+- Added `docs` to the app state and a “Source letters” card in the School tab, filtered by child.
+- Uploaded the two week 45 letters to KV and attached them: `/api/pdf/school-week45-solvei.pdf` (Solvei) and `/api/pdf/school-week45-ellinor.pdf` (Ellinor).
+- Extended `scripts/import-school.mjs` to merge `docs`, and `scripts/school-inbox.mjs` to upload each new PDF to KV and write `imports/pending/<name>.json` with its URL.
+- R2 is not enabled on this account; KV is used instead. Open: verify the PDF links after login.
