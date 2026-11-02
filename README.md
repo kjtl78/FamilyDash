@@ -3,6 +3,16 @@
 Static page (`public/`) + API (`functions/api/`) + D1 database, protected by Cloudflare Access.
 Cost: free tier. Read HANDOVER.md before changing anything.
 
+## Updating it
+
+One command does check → commit → push → deploy → verify:
+
+```bash
+npm run ship -- "what changed"
+```
+
+It prints **✓ Live** with the URL to test. See `WORKFLOW.md` for details, one-off commands and secrets.
+
 ## One-time setup (about 20 minutes)
 
 You need: a free Cloudflare account, and Node.js installed on your computer.

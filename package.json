@@ -1,0 +1,13 @@
+{
+  "name": "familyhub",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "ship": "node scripts/ship.mjs",
+    "dev": "wrangler pages dev public --d1 DB=familyhub",
+    "deploy": "wrangler pages deploy public --project-name familyhub --branch main",
+    "status": "wrangler pages deployment list --project-name familyhub",
+    "db:init": "wrangler d1 execute familyhub --remote --file=schema.sql"
+  }
+}

@@ -22,13 +22,14 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Work account (organisation: 4subsea). Org sharing settings may limit who can open the Claude-hosted link.
 
 ## Current state (update this section on every change)
-- Status: Cloudflare site is DEPLOYED (user: GitHub repo `kjtl78/FamilyDash`, Cloudflare Pages Git integration). Update 2 (Entry 8) built and tested only with fake data; not yet deployed or configured by the user.
-- Artifact URL: https://claude.ai/artifact/2peaZ8Y5AuxC7wfqsZNvr5
-- Source file: `family-dashboard.html` (single self-contained file, vanilla JS, no dependencies).
-- Cloudflare project layout: `public/index.html`, `functions/api/_middleware.js` (Access JWT check, fails closed), `functions/api/state.js` (GET/PUT, D1), `schema.sql`, `wrangler.toml` (database_id placeholder), `README.md` (setup steps).
-- Update 2 adds: `lib/ical.js` (iCal reader), `functions/api/calendar.js`, `functions/api/bring.js`, `functions/api/ideas.js`; tabs are now Today, Calendar, Meals (planner + recipes + AI ideas), Shopping (Bring! mirror + Hub list), School, More (chores, notes, contacts, backup).
-- Storage outside Claude: `GET/PUT /api/state` against D1 table `kv` (row id `family`), client polls every 15 s and on focus; last writer wins.
-- Google Calendar connector: suggested to the user, connection not confirmed.
+- Status: LIVE. GitHub `kjtl78/FamilyDash` (branch `main`, public) is Git-connected to Cloudflare Pages project `familyhub` → https://familyhub-84t.pages.dev. Production deploy `90d9e1b` was live on 2026-11-02; every push to `main` rebuilds and deploys.
+- Family site: https://familydash.pages.dev is protected by Cloudflare Access team `lionfishky`, but it is NOT visible from the authenticated `sagstad@gmail.com` Cloudflare account. The controllable project is `familyhub-84t.pages.dev`; confirm which account owns `familydash.pages.dev` (Entry 9).
+- Update loop: `npm run ship -- "message"` checks, commits, pushes, waits for the deployment and verifies the site (`WORKFLOW.md`).
+- Cloudflare project layout: `public/index.html`, `functions/api/_middleware.js` (Access JWT check, fails closed), `functions/api/state.js` (GET/PUT, D1), `lib/ical.js`, `functions/api/calendar.js`, `functions/api/bring.js`, `functions/api/ideas.js`, `schema.sql`, `wrangler.toml`, `scripts/check.mjs`, `scripts/ship.mjs`, `README.md`, `WORKFLOW.md`.
+- Tabs: Today, Calendar, Meals (planner + recipes + AI ideas), Shopping (Bring! mirror + Hub list), School, More (chores, notes, contacts, backup).
+- Storage: `GET/PUT /api/state` against D1 table `kv` (row id `family`), client polls every 15 s and on focus; last writer wins.
+- Config: D1 binding `DB` and table `kv` exist. `TEAM_DOMAIN`, `POLICY_AUD` and the Workers AI binding `AI` were added to `wrangler.toml` in Entry 9; verification after the first `npm run ship` was still pending when this entry was written. `GCAL_ICS_URL`, `BRING_EMAIL` and `BRING_PASSWORD` secrets are not set, so Calendar and Bring! return 501.
+- Google Calendar connector: still not confirmed.
 
 ## Architecture
 - One HTML file, no build step. Tabs: Today, Calendar, Meals, Shopping, Chores, Info (notes and contacts).
@@ -63,18 +64,21 @@ Recommended: **Cloudflare Pages** + **Pages Functions** + **D1** (or KV) for sha
 
 ## Open items
 - [x] Hosting choice confirmed by user: Cloudflare (Entry 5).
-- [ ] Privacy guardrails to implement in the Cloudflare build (see Entry 5).
-- [ ] User to connect Google Calendar connector (or choose iCal feed approach).
-- [ ] User to provide the school/homework PDF (or its URL) and the children's names.
 - [x] Build deploy-ready Cloudflare project (Entry 6).
-- [ ] User to deploy following README and confirm the front page works on phone and desktop.
+- [x] Site deployed via GitHub + Cloudflare Git integration (Entries 7, 9).
 - [x] Copy Hub list button added (Entry 8).
-- [x] School calendar + JSON import added (Entry 8). PDFs are read by Claude in chat, not by the app.
-- [ ] User to deploy Update 2: upload files, add `[ai]` to wrangler.toml, add secrets, redeploy, verify /api/calendar and /api/bring.
-- [ ] User to send first school PDF + children's first names (add them as family members first).
-- [ ] Verify the unofficial Bring! login works from Cloudflare (untested).
-- [ ] Verify Workers AI model name `@cf/meta/llama-3.3-70b-instruct-fp8-fast` exists on the account (configurable via AI_MODEL).
-- [ ] Optional: birthdays, recurring chores, pinned weekly menu, shopping list download.
+- [x] School calendar + JSON import added (Entry 8). PDFs are read in chat, not by the app.
+- [x] Update 2 deployed (Entry 9).
+- [x] One-command update workflow added: `npm run ship` (Entry 9).
+- [ ] Confirm which Cloudflare account owns `familydash.pages.dev`. The account we can control (`sagstad@gmail.com`) owns only `familyhub-84t.pages.dev`.
+- [ ] Decide access for `familyhub-84t.pages.dev`: it is currently public. Add Access or use only the protected family site.
+- [ ] Consider making the GitHub repository private (currently public; keep secrets and family data out).
+- [ ] Add `GCAL_ICS_URL` secret and verify `/api/calendar` on a real feed.
+- [ ] Add `BRING_EMAIL` / `BRING_PASSWORD` secrets and verify `/api/bring` (unofficial API, untested).
+- [ ] Verify the Workers AI binding and model `@cf/meta/llama-3.3-70b-instruct-fp8-fast` after the first deploy (override with `AI_MODEL`).
+- [ ] Privacy guardrails from Entry 5 (Access on both site and `/api/*`, no trackers, minimal data).
+- [ ] User to send the first school PDF + children's first names (add them as family members first).
+- [ ] Optional: birthdays, recurring chores, pinned weekly menu, shopping list download, conflict-safe saves.
 
 ---
 
@@ -137,3 +141,13 @@ Added:
 School import format (for any model asked to convert a school PDF): output ONLY a JSON array, dates ISO, child names exactly as in the Hub, type one of homework|activity|event:
 `[{"child":"Emma","date":"2026-11-03","type":"homework","title":"Maths p.45","subject":"Maths"}]`
 Ask the user for the children's first names if not known; skip anything ambiguous and list it separately.
+
+### 2026-11-02 · Entry 9 · One-command update workflow
+- Retrieved the project from GitHub into `/Users/kjtl/FamilyDash`; push access confirmed as `kjtl78`.
+- Installed Node LTS 26.13.0 and wrangler 4.156.2 inside `~/.local` (no admin rights). Publishing now needs no manual upload: `npm run ship -- "message"` checks, commits, pushes, waits for the Pages build and verifies the live site.
+- Added `scripts/check.mjs` (syntax check for all JS plus the inline script in `public/index.html`), `scripts/ship.mjs`, `package.json` scripts, `WORKFLOW.md`, and a short update section in `README.md`.
+- Cloudflare account `sagstad@gmail.com` (`d590e1e7a0695bc1d6109dbaedd984ac`) owns Pages project `familyhub` → `familyhub-84t.pages.dev`, Git-connected to `main`. Latest deploy source `90d9e1b` matched repo HEAD. D1 `familyhub` contains table `kv`.
+- `/api/*` on `familyhub-84t.pages.dev` returned 503 because `TEAM_DOMAIN`/`POLICY_AUD` were unset. Added them and the `[ai]` binding to `wrangler.toml`.
+- `familydash.pages.dev` is behind Access team `lionfishky` but is NOT in this Cloudflare account (only one membership is visible). Its AUD tag was used for `POLICY_AUD`.
+- `familyhub-84t.pages.dev` is currently public and unprotected; the API still refuses without an Access JWT. The GitHub repository is also public.
+- Still unverified when this entry was written: the first `npm run ship` deployment, the Access-protected site, the AI model name, Google Calendar and Bring! (secrets missing).

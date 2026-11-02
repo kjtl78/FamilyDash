@@ -2,7 +2,14 @@ name = "familyhub"
 pages_build_output_dir = "public"
 compatibility_date = "2026-01-01"
 
+[vars]
+TEAM_DOMAIN = "lionfishky.cloudflareaccess.com"
+POLICY_AUD = "b8e436731be7b472ac5b2ccbdcceb21b2b940568fd6192c707f20970bd2a04ef"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "familyhub"
 database_id = "37b2c55b-aa07-4609-94ed-7b882c060473"
+
+[ai]
+binding = "AI"
