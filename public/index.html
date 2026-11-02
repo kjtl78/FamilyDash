@@ -153,6 +153,9 @@ nav button{display:flex;align-items:center;gap:6px}
 .smitems{flex:1;min-width:0}
 .smitems .sitem{font-size:12.5px;padding-right:16px}
 .schoolmob .sitem .x{position:absolute;right:0;top:0;font-size:12px;min-width:0;min-height:0;padding:0 2px;line-height:1}
+.chip.daytag{background:#c79a1c;color:#2a2723;font-weight:600}
+.chip.daytag.weekday{background:#2f7fbf;color:#fff}
+select.daysel{font-size:12px;min-height:0;padding:2px 4px;border-radius:999px;background:var(--surface2);max-width:112px}
 details.card summary{cursor:pointer;font-family:Georgia,"Times New Roman",serif;font-size:16px;font-weight:600;list-style:none}
 details.card summary::-webkit-details-marker{display:none}
 details.card summary:after{content:" +";color:var(--accent)}
@@ -400,6 +403,7 @@ var EFFORT={1:"Easy",2:"Medium",3:"Involved"};
 var MINUTES=[15,20,25,30,40,45,60,90];
 var DAYNAMES=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 function minutesOf(r){var m=+((r&&r.minutes)||0);if(m>=10)return m;var e=(r&&r.effort)||1;return e===1?30:(e===3?60:45)}
+function dayPreset(days){var d=(days||[]).slice().sort(function(a,b){return a-b}).join(",");return ["","4,5","4","5","6","4,5,6","0,1,2,3"].indexOf(d)>=0?d:"custom"}
 
 function softRender(){var a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&$("view").contains(a))return;render()}
 function tzName(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC"}catch(e){return "UTC"}}
@@ -489,8 +493,14 @@ function suggestDinners(overwrite, quickOnly){
     var curRecipe=curName?findRecipe(curName):null;
     pool.forEach(function(r){
       if(used[r.id])return;
-      if((r.days||[]).length&&(r.days||[]).indexOf(dow)<0)return;
       var sc=(r.rating||3)*2;
+      var rd=(r.days||[]);
+      if(rd.length){
+        // Tagged days are a strong preference (about 70% of appearances);
+        // elsewhere the recipe stays eligible only 30% of the time.
+        if(rd.indexOf(dow)>=0){sc+=12}
+        else{if(Math.random()>0.3)return;sc-=4}
+      }
       var since=r.lastMade?Math.round((d-parse(r.lastMade))/864e5):30;if(since<0)since=30;
       sc+=Math.min(since,30)/6;if(since<7)sc-=4;
       sc-=((r.effort||2)-1)*(weekday?1.5:0.5);
@@ -534,7 +544,7 @@ function vRecipes(){
     '<div class="row" style="margin-top:8px"><select id="rEffort">'+[1,2,3].map(function(n){return '<option value="'+n+'"'+((er?er.effort:1)===n?" selected":"")+'>'+EFFORT[n]+'</option>'}).join("")+'</select>'+
     '<select id="rMinutes" title="Time">'+MINUTES.map(function(n){var cur=er?minutesOf(er)===n:(n===30);return '<option value="'+n+'"'+(cur?" selected":"")+'>'+n+' min</option>'}).join("")+'</select>'+
     '<select id="rRating">'+[5,4,3,2,1].map(function(n){return '<option value="'+n+'"'+((er?er.rating:3)===n?" selected":"")+'>'+stars(n)+'</option>'}).join("")+'</select></div>'+
-    '<div class="row" id="rDays" style="margin-top:8px;gap:4px" title="Leave all unchecked for any day"><span style="font-size:12px;color:var(--muted);flex:0 0 auto">Only on:</span>'+DAYNAMES.map(function(n,i){var on=er&&(er.days||[]).indexOf(i)>=0;return '<label class="chip" style="display:flex;align-items:center;gap:3px;padding:3px 6px"><input type="checkbox" data-day="'+i+'" style="width:14px;height:14px;min-height:0;margin:0"'+(on?" checked":"")+'>'+n+'</label>'}).join("")+'</div>'+
+    '<div class="row" id="rDays" style="margin-top:8px;gap:4px" title="Leave all unchecked for any day; tagged days are a preference (about 70%), not a hard rule."><span style="font-size:12px;color:var(--muted);flex:0 0 auto">Prefers:</span>'+DAYNAMES.map(function(n,i){var on=er&&(er.days||[]).indexOf(i)>=0;return '<label class="chip" style="display:flex;align-items:center;gap:3px;padding:3px 6px"><input type="checkbox" data-day="'+i+'" style="width:14px;height:14px;min-height:0;margin:0"'+(on?" checked":"")+'>'+n+'</label>'}).join("")+'</div>'+
     '<textarea id="rIngr" rows="6" style="width:100%;margin-top:8px" placeholder="Ingredients, one per line">'+esc(er?er.ingredients.join("\n"):"")+'</textarea>'+
     '<input type="text" id="rNotes" style="width:100%;margin-top:8px" placeholder="Notes or link (optional)" value="'+esc(er&&er.notes?er.notes:"")+'">'+
     '<div class="row" style="margin-top:8px"><button class="btn" data-act="saveRecipe">'+(er?"Save":"Add recipe")+'</button>'+(er?'<button class="ghost" data-act="cancelRecipe">Cancel</button>':"")+'</div></div>';
@@ -545,11 +555,23 @@ function vRecipes(){
   else h+='<ul class="list">'+state.recipes.slice().sort(function(a,b){return a.name.localeCompare(b.name)}).map(function(r){
     var sp=specialsOf(r);
     var dayText=(r.days||[]).map(function(n){return DAYNAMES[n]}).join(", ");
+    var dayCls=(r.days||[]).some(function(n){return n>=4})?" weekend":" weekday";
+    var preset=dayPreset(r.days);
+    var daySelect='<select class="daysel" data-recipe-days="'+r.id+'" title="Preferred days">'+
+      '<option value=""'+(preset===""?" selected":"")+'>Any day</option>'+
+      '<option value="4,5"'+(preset==="4,5"?" selected":"")+'>Fri+Sat</option>'+
+      '<option value="4"'+(preset==="4"?" selected":"")+'>Fri</option>'+
+      '<option value="5"'+(preset==="5"?" selected":"")+'>Sat</option>'+
+      '<option value="6"'+(preset==="6"?" selected":"")+'>Sun</option>'+
+      '<option value="4,5,6"'+(preset==="4,5,6"?" selected":"")+'>Fri–Sun</option>'+
+      '<option value="0,1,2,3"'+(preset==="0,1,2,3"?" selected":"")+'>Mon–Thu</option>'+
+      (preset==="custom"?'<option value="custom" selected>Custom…</option>':'')+
+      '</select>';
     return '<li style="align-items:flex-start"><span class="t"><b>'+esc(r.name)+'</b> <span class="chip">'+EFFORT[r.effort||1]+' · '+minutesOf(r)+' min</span> <span class="chip">'+stars(r.rating||3)+'</span>'+
-      (dayText?' <span class="chip">'+esc(dayText)+' only</span>':'')+
+      (dayText?' <span class="chip daytag'+dayCls+'" title="Preferred days (about 70%)">'+esc(dayText)+'</span>':'')+
       (r.lastMade?' <span class="chip">made '+esc(parse(r.lastMade).toLocaleDateString(undefined,{day:"numeric",month:"short"}))+'</span>':'')+
       '<div style="color:var(--muted);font-size:12px;margin-top:2px">'+(sp.length?'Needs: '+esc(sp.join(", ")):'Only everyday ingredients')+(r.notes?' · '+esc(r.notes):'')+'</div></span>'+
-      '<span class="row" style="flex:0 0 auto"><button class="ghost" data-act="madeToday" data-id="'+r.id+'">Made today</button><button class="ghost" data-act="editRecipe" data-id="'+r.id+'">Edit</button><button class="x" data-act="delRecipe" data-id="'+r.id+'">×</button></span></li>'}).join("")+'</ul>';
+      '<span class="row" style="flex:0 0 auto">'+daySelect+'<button class="ghost" data-act="madeToday" data-id="'+r.id+'">Made today</button><button class="ghost" data-act="editRecipe" data-id="'+r.id+'">Edit</button><button class="x" data-act="delRecipe" data-id="'+r.id+'">×</button></span></li>'}).join("")+'</ul>';
   h+='</div>';
   h+='<div class="card" style="margin-top:14px"><h2>New dinner ideas <button class="ghost" data-act="getIdeas">'+(ideasBusy?"Thinking…":"✨ Suggest 4 dinners")+'</button></h2>'+
     '<div class="row" style="margin:4px 0 6px;font-size:13px"><label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ideaQuick" checked> Quick weeknight (≤30 min)</label></div>'+
@@ -750,6 +772,15 @@ document.addEventListener("click",function(e){
 });
 document.addEventListener("change",function(e){
   var el=e.target;
+  if(el.dataset&&el.dataset.recipeDays){
+    var dv=el.value;
+    if(dv!=="custom"){
+      var ds=dv?dv.split(",").map(function(n){return +n}):[];
+      state.recipes.forEach(function(r){if(r.id===el.dataset.recipeDays)r.days=ds});
+      changed();
+    }
+    return;
+  }
   if(el.dataset&&el.dataset.staples){state.staples=el.value.split(/[,\n]/).map(function(x){return x.trim()}).filter(Boolean);scheduleSave();return}
   if(el.dataset&&el.dataset.act&&el.type==="checkbox"){actions[el.dataset.act](el);return}
   if(el.dataset&&el.dataset.meal){

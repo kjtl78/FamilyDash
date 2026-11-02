@@ -31,7 +31,7 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Config: D1 binding `DB` and table `kv` exist; KV binding `SCHOOL` points at namespace `familyhub-school` (`99c2fdf65a324d1f8343aa581184f2cb`); `TEAM_DOMAIN` = `cold-dust-02c3.cloudflareaccess.com` and `POLICY_AUD` = `8ba3272a…f87d32c` are set on the Pages project; the `AI` binding exists. These were copied to the new `familien-ds` project through the Pages API; `GCAL_ICS_URL` was copied with `wrangler pages secret put`. Important: Pages Git builds ignore `[vars]`, and KV bindings from `wrangler.toml` did not apply either, so project config must be set through the API/dashboard. `BRING_EMAIL` / `BRING_PASSWORD` are not set, so Bring! returns 501.
 - Google Calendar: connected read-only via the `GCAL_ICS_URL` secret (calendar “Familien DDS”, 493 events). The real feed was parsed locally with `lib/ical.js`; the UI verification still needs a logged-in session.
 - Live data: family members Solvei (1. trinn) and Ellinor (4. trinn); the week 45 school plan is imported (14 items) plus 3 notes. Ellinor is in B class, so the week 46 gym reminder is on Monday 9.11.
-- Dinner planner: breakfast and lunch removed; recipes store `minutes` and optional day tags (e.g. Fri/Sat only); “⚡ Quick week (≤30 min)” fills only quick recipes; AI ideas target ordinary Norwegian supermarket ingredients and short cooking times.
+- Dinner planner: breakfast and lunch removed; recipes store `minutes` and optional day preferences (colored tags, quick per-row dropdown, about 70% on tagged days); “⚡ Quick week (≤30 min)” fills only quick recipes; AI ideas target ordinary Norwegian supermarket ingredients and short cooking times.
 - Mobile: under 700px the Google Calendar and ukeplan switch to vertical lists instead of the squeezed horizontal grids; desktop keeps the dense strips. The School header is Prev / week / Next.
 - School-letter intake: share a PDF from the phone into iCloud Drive `FamilyHub/Inbox` or Google Drive `My Drive/FamilyHub/Inbox`. The LaunchAgent watcher `com.familyhub.school-inbox` extracts it into `imports/pending/`, uploads the PDF to KV, and notifies; the import is reviewed before it is merged.
 - Source PDFs: stored in the private KV namespace `familyhub-school` (binding `SCHOOL`) and served at `/api/pdf/<key>` behind Cloudflare Access. Week 45 letters are attached to Solvei and Ellinor in the School tab.
@@ -271,3 +271,10 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - `suggestDinners` skips a recipe whose day list does not include the target day, in **Fill empty dinners**, **Quick week** and **Re-suggest all**. A recipe still cannot repeat within the same week.
 - `scripts/import-recipes.mjs` accepts `days` as numbers 0–6 or strings `mon…sun`.
 - Verified locally: a Friday/Saturday-only recipe filled only those days; with two weekend recipes, both Friday and Saturday filled; the form persisted `days: [4,5]`.
+
+### 2026-11-02 · Entry 25 · Colored day tags, quick dropdown, soft 70% preference
+- Day tags are now a **preference**, not a hard rule. On a tagged day the recipe gets a +12 score; on other days it remains eligible only 30% of the time (70% excluded) with a small penalty. A Fri/Sat recipe therefore appears mostly on those days but can still turn up midweek.
+- The recipe-book tag is coloured: gold when the tag includes Fri/Sat/Sun, blue for Mon–Thu. Text is e.g. “Fri, Sat”; the tooltip explains the ~70% preference.
+- Every recipe row has a compact day dropdown — Any day, Fri+Sat, Fri, Sat, Sun, Fri–Sun, Mon–Thu, Custom… — which saves immediately without opening Edit.
+- The form label changed from “Only on” to “Prefers”.
+- Verified locally: the dropdown changed `Weekday pasta` from `[]` to `[4]`; the gold tag and dropdown render correctly.
