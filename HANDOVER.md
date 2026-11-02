@@ -31,7 +31,7 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Config: D1 binding `DB` and table `kv` exist; KV binding `SCHOOL` points at namespace `familyhub-school` (`99c2fdf65a324d1f8343aa581184f2cb`); `TEAM_DOMAIN` = `cold-dust-02c3.cloudflareaccess.com` and `POLICY_AUD` = `8ba3272a…f87d32c` are set on the Pages project; the `AI` binding exists. These were copied to the new `familien-ds` project through the Pages API; `GCAL_ICS_URL` was copied with `wrangler pages secret put`. Important: Pages Git builds ignore `[vars]`, and KV bindings from `wrangler.toml` did not apply either, so project config must be set through the API/dashboard. `BRING_EMAIL` / `BRING_PASSWORD` are not set, so Bring! returns 501.
 - Google Calendar: connected read-only via the `GCAL_ICS_URL` secret (calendar “Familien DDS”, 493 events). The real feed was parsed locally with `lib/ical.js`; the UI verification still needs a logged-in session.
 - Live data: family members Solvei (1. trinn) and Ellinor (4. trinn); the week 45 school plan is imported (14 items) plus 3 notes. Ellinor is in B class, so the week 46 gym reminder is on Monday 9.11.
-- Dinner planner: breakfast and lunch removed; recipes store `minutes` and optional day preferences (colored tags, per-row day toggles, about 70% on tagged days); “⚡ Quick week (≤30 min)” fills only quick recipes; AI ideas target ordinary Norwegian supermarket ingredients and short cooking times.
+- Dinner planner: breakfast and lunch removed; recipes store `minutes` and optional day preferences (colored tags, per-row day toggles; 70% of suggestion runs keep tagged dishes on their days, 30% are a free mix); “⚡ Quick week (≤30 min)” fills only quick recipes; AI ideas target ordinary Norwegian supermarket ingredients and short cooking times.
 - Mobile: under 700px the Google Calendar and ukeplan switch to vertical lists instead of the squeezed horizontal grids; desktop keeps the dense strips. The School header is Prev / week / Next.
 - School-letter intake: share a PDF from the phone into iCloud Drive `FamilyHub/Inbox` or Google Drive `My Drive/FamilyHub/Inbox`. The LaunchAgent watcher `com.familyhub.school-inbox` extracts it into `imports/pending/`, uploads the PDF to KV, and notifies; the import is reviewed before it is merged.
 - Source PDFs: stored in the private KV namespace `familyhub-school` (binding `SCHOOL`) and served at `/api/pdf/<key>` behind Cloudflare Access. Week 45 letters are attached to Solvei and Ellinor in the School tab.
@@ -284,3 +284,10 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - Active weekdays are blue, active weekend days gold; the coloured summary tag stays. Clicking a toggle adds or removes that day and saves immediately.
 - Removed the now-unused `dayPreset` helper and the select change handler.
 - Verified locally: Weekend stew `[4,5]` → added Mon → `[0,4,5]` → removed Fri → `[0,5]`.
+
+### 2026-11-02 · Entry 27 · Day tags control the suggestion run
+- Reworked the day preference. `suggestDinners` now makes one 70% decision per run. In a **“day tags kept”** run, every day with tagged recipes uses only those recipes (unused first; a repeat is allowed if the tagged pool is exhausted), and days without tags use untagged recipes. In a **“free mix”** run (30%), any recipe can go anywhere.
+- This is the behaviour requested: weekend dishes land on Friday/Saturday in roughly 70% of re-suggests, weekdays get weekday dishes, and the other 30% provides variety.
+- The status bar appends **“ · day tags kept”** or **“ · free mix”** when any recipe has day tags, so the mode is visible.
+- Verified locally with a forced test override: respect mode placed weekday dishes Mon–Thu and weekend dishes Fri–Sat; the override was removed before shipping.
+- The recipe form hint now explains the 70/30 behaviour.

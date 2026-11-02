@@ -484,6 +484,8 @@ function suggestDinners(overwrite, quickOnly){
   if(!pool.length){setStatus(quickOnly?"No quick recipes yet – add one or use the AI suggestions":(state.recipes.length?"No quick recipes":"Add some recipes first"));return}
   var days=[];for(var i=0;i<7;i++)days.push(addDays(weekStart,i));
   var used={},picked={},targets=[],n=0;
+  var anyTags=pool.some(function(r){return (r.days||[]).length>0});
+  var respectDays=Math.random()<0.7;
   days.forEach(function(d){
     var cur=((state.meals[iso(d)]||{}).d||"").trim();
     if(cur&&!overwrite){var r=findRecipe(cur);if(r){used[r.id]=1;specialsOf(r).forEach(function(x){picked[ikey(x)]=1})}}
@@ -493,16 +495,21 @@ function suggestDinners(overwrite, quickOnly){
     var dow=(d.getDay()+6)%7,weekday=dow<4,best=null,bs=-1e9;
     var curName=((state.meals[iso(d)]||{}).d||"").trim();
     var curRecipe=curName?findRecipe(curName):null;
-    pool.forEach(function(r){
-      if(used[r.id])return;
-      var sc=(r.rating||3)*2;
-      var rd=(r.days||[]);
-      if(rd.length){
-        // Tagged days are a strong preference (about 70% of appearances);
-        // elsewhere the recipe stays eligible only 30% of the time.
-        if(rd.indexOf(dow)>=0){sc+=12}
-        else{if(Math.random()>0.3)return;sc-=4}
+    var candidates=pool,allowRepeat=false;
+    if(respectDays&&anyTags){
+      var tagged=pool.filter(function(r){return (r.days||[]).indexOf(dow)>=0});
+      if(tagged.length){
+        var unused=tagged.filter(function(r){return !used[r.id]});
+        if(unused.length)candidates=unused;
+        else{candidates=tagged;allowRepeat=true}
+      }else{
+        var untagged=pool.filter(function(r){return !(r.days||[]).length});
+        if(untagged.length)candidates=untagged;
       }
+    }
+    candidates.forEach(function(r){
+      if(!allowRepeat&&used[r.id])return;
+      var sc=(r.rating||3)*2;
       var since=r.lastMade?Math.round((d-parse(r.lastMade))/864e5):30;if(since<0)since=30;
       sc+=Math.min(since,30)/6;if(since<7)sc-=4;
       sc-=((r.effort||2)-1)*(weekday?1.5:0.5);
@@ -517,7 +524,8 @@ function suggestDinners(overwrite, quickOnly){
     used[best.id]=1;specialsOf(best).forEach(function(x){picked[ikey(x)]=1});
     var k=iso(d),m=state.meals[k]||{};m.d=best.name;state.meals[k]=m;n++;
   });
-  changed();setStatus(n?"Suggested "+n+" dinner"+(n>1?"s":""):(quickOnly?"No free dinner slots or quick recipes left":"No free dinner slots or recipes left"));
+  var suffix=anyTags?(respectDays?" · day tags kept":" · free mix"):"";
+  changed();setStatus(n?("Suggested "+n+" dinner"+(n>1?"s":"")+suffix):(quickOnly?"No free dinner slots or quick recipes left":"No free dinner slots or recipes left"));
 }
 function fillNextDinner(name){
   for(var i=0;i<7;i++){
@@ -547,6 +555,7 @@ function vRecipes(){
     '<select id="rMinutes" title="Time">'+MINUTES.map(function(n){var cur=er?minutesOf(er)===n:(n===30);return '<option value="'+n+'"'+(cur?" selected":"")+'>'+n+' min</option>'}).join("")+'</select>'+
     '<select id="rRating">'+[5,4,3,2,1].map(function(n){return '<option value="'+n+'"'+((er?er.rating:3)===n?" selected":"")+'>'+stars(n)+'</option>'}).join("")+'</select></div>'+
     '<div class="row" id="rDays" style="margin-top:8px;gap:4px" title="Leave all unchecked for any day; tagged days are a preference (about 70%), not a hard rule."><span style="font-size:12px;color:var(--muted);flex:0 0 auto">Prefers:</span>'+DAYNAMES.map(function(n,i){var on=er&&(er.days||[]).indexOf(i)>=0;return '<label class="chip" style="display:flex;align-items:center;gap:3px;padding:3px 6px"><input type="checkbox" data-day="'+i+'" style="width:14px;height:14px;min-height:0;margin:0"'+(on?" checked":"")+'>'+n+'</label>'}).join("")+'</div>'+
+    '<div style="color:var(--muted);font-size:11px;margin-top:-2px">On about 70% of suggestions these days use this dish; the other 30% mix freely.</div>'+
     '<textarea id="rIngr" rows="6" style="width:100%;margin-top:8px" placeholder="Ingredients, one per line">'+esc(er?er.ingredients.join("\n"):"")+'</textarea>'+
     '<input type="text" id="rNotes" style="width:100%;margin-top:8px" placeholder="Notes or link (optional)" value="'+esc(er&&er.notes?er.notes:"")+'">'+
     '<div class="row" style="margin-top:8px"><button class="btn" data-act="saveRecipe">'+(er?"Save":"Add recipe")+'</button>'+(er?'<button class="ghost" data-act="cancelRecipe">Cancel</button>':"")+'</div></div>';
@@ -563,7 +572,7 @@ function vRecipes(){
       return '<button class="daybtn'+(on?" on":"")+(i<4?" weekday":"")+'" data-recipe-day="'+r.id+'" data-day="'+i+'" title="'+n+'">'+n.slice(0,2)+'</button>';
     }).join("");
     return '<li style="align-items:flex-start"><span class="t"><b>'+esc(r.name)+'</b> <span class="chip">'+EFFORT[r.effort||1]+' · '+minutesOf(r)+' min</span> <span class="chip">'+stars(r.rating||3)+'</span>'+
-      (dayText?' <span class="chip daytag'+dayCls+'" title="Preferred days (about 70%)">'+esc(dayText)+'</span>':'')+
+      (dayText?' <span class="chip daytag'+dayCls+'" title="About 70% of suggestions keep this dish on these days">'+esc(dayText)+'</span>':'')+
       (r.lastMade?' <span class="chip">made '+esc(parse(r.lastMade).toLocaleDateString(undefined,{day:"numeric",month:"short"}))+'</span>':'')+
       '<div style="color:var(--muted);font-size:12px;margin-top:2px">'+(sp.length?'Needs: '+esc(sp.join(", ")):'Only everyday ingredients')+(r.notes?' · '+esc(r.notes):'')+'</div></span>'+
       '<span class="row" style="flex:0 0 auto">'+dayBtns+'<button class="ghost" data-act="madeToday" data-id="'+r.id+'">Made today</button><button class="ghost" data-act="editRecipe" data-id="'+r.id+'">Edit</button><button class="x" data-act="delRecipe" data-id="'+r.id+'">×</button></span></li>'}).join("")+'</ul>';
