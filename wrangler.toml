@@ -5,4 +5,4 @@ compatibility_date = "2026-01-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "familyhub"
-database_id = "PASTE-YOUR-DATABASE-ID-HERE"
+database_id = "37b2c55b-aa07-4609-94ed-7b882c060473"
