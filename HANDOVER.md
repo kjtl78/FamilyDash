@@ -26,11 +26,12 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Family site: https://familyhub-84t.pages.dev is the chosen household site, protected by Cloudflare Access team `cold-dust-02c3` (application AUD `8ba3272a992d27f6fe1b07b5c29d109f607a6767d0f7d5156e9cf9de8f87d32c`). The login method is **Sign in with Cloudflare**. The older `familydash.pages.dev` site (Access team `lionfishky`) belongs to a different account and is no longer used.
 - Update loop: `npm run ship -- "message"` checks, commits, pushes, waits for the deployment and verifies the site (`WORKFLOW.md`).
 - Cloudflare project layout: `public/index.html`, `functions/api/_middleware.js` (Access JWT check, fails closed), `functions/api/state.js` (GET/PUT, D1), `lib/ical.js`, `functions/api/calendar.js`, `functions/api/bring.js`, `functions/api/ideas.js`, `schema.sql`, `wrangler.toml`, `scripts/check.mjs`, `scripts/ship.mjs`, `README.md`, `WORKFLOW.md`.
-- Tabs: Today, Calendar, Meals (planner + recipes + AI ideas), Shopping (Bring! mirror + Hub list), School, More (chores, notes, contacts, backup).
+- Tabs: Today, Calendar, Dinner (dinner-only planner + recipes + AI ideas), Shopping (Bring! mirror + Hub list), School, More (chores, notes, contacts, backup).
 - Storage: `GET/PUT /api/state` against D1 table `kv` (row id `family`), client polls every 15 s and on focus; last writer wins.
 - Config: D1 binding `DB` and table `kv` exist; KV binding `SCHOOL` points at namespace `familyhub-school` (`99c2fdf65a324d1f8343aa581184f2cb`); `TEAM_DOMAIN` = `cold-dust-02c3.cloudflareaccess.com` and `POLICY_AUD` = `8ba3272a…f87d32c` are set on the Pages project; the `AI` binding exists. Important: Pages Git builds ignore `[vars]`, and KV bindings from `wrangler.toml` did not apply either, so these were set through the Pages API. `GCAL_ICS_URL` is set; `BRING_EMAIL` / `BRING_PASSWORD` are not, so Bring! returns 501.
 - Google Calendar: connected read-only via the `GCAL_ICS_URL` secret (calendar “Familien DDS”, 493 events). The real feed was parsed locally with `lib/ical.js`; the UI verification still needs a logged-in session.
 - Live data: family members Solvei (1. trinn) and Ellinor (4. trinn); the week 45 school plan is imported (14 items) plus 3 notes. Ellinor is in B class, so the week 46 gym reminder is on Monday 9.11.
+- Dinner planner: breakfast and lunch removed; recipes store `minutes`; “⚡ Quick week (≤30 min)” fills only quick recipes; AI ideas target ordinary Norwegian supermarket ingredients and short cooking times.
 - School-letter intake: share a PDF from the phone into iCloud Drive `FamilyHub/Inbox` or Google Drive `My Drive/FamilyHub/Inbox`. The LaunchAgent watcher `com.familyhub.school-inbox` extracts it into `imports/pending/`, uploads the PDF to KV, and notifies; the import is reviewed before it is merged.
 - Source PDFs: stored in the private KV namespace `familyhub-school` (binding `SCHOOL`) and served at `/api/pdf/<key>` behind Cloudflare Access. Week 45 letters are attached to Solvei and Ellinor in the School tab.
 
@@ -89,6 +90,8 @@ Recommended: **Cloudflare Pages** + **Pages Functions** + **D1** (or KV) for sha
 - [x] Ellinor is in B class; the week 46 gym reminder is set for Monday 9.11 (gymtøy, håndkle, såpe).
 - [ ] Test the iPhone share-to-inbox flow end to end (school app → Save to Files/Drive → `FamilyHub/Inbox`).
 - [ ] Decide later whether AI-assisted auto-import is trusted enough; it misread the 1st-grade columns once, so imports stay reviewed for now.
+- [ ] Add the family's frequent dinners to the recipe book; `scripts/import-recipes.mjs` is ready for a list of names (ingredients/times optional).
+- [ ] Verify the live AI ideas button (quick filter ≤30 min, minutes shown) after login.
 - [ ] Optional: birthdays, recurring chores, pinned weekly menu, shopping list download, conflict-safe saves.
 
 ---
@@ -225,3 +228,12 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - School source PDFs are compact links under the grid; the add/import forms are collapsed in `<details>`.
 - Mobile: both week strips scroll horizontally; the rest stacks. Verified locally with the real D1 state at desktop and mobile widths, and with the real iCal feed via a temporary `.dev.vars` (DEV=1, local only).
 - `.openchamber/` (local screenshots) is now git-ignored.
+
+### 2026-11-02 · Entry 19 · Dinner-only planner and quick recipe generator
+- Removed breakfast and lunch: `SLOTS` is dinner only, the tab is renamed **Dinner**, and the Today card is “Today’s dinner”. Existing `meals.b` / `meals.l` values are left in the state but ignored.
+- Recipes now store `minutes`. The add/edit form has a time select (15–90 min); the recipe book shows effort, minutes and rating.
+- `suggestDinners` penalises longer recipes on weekdays, and a new **⚡ Quick week (≤30 min)** button fills only recipes at or under 30 minutes.
+- The AI ideas prompt now targets a normal Norwegian supermarket, ≤30 minutes (quick checkbox), at most 8 non-staple ingredients, only common spices/condiments, one pan or pot, and returns a `minutes` value. Tested against the live Workers AI model: four sensible quick dinners (chicken fajita, beef stir-fry, baked salmon, meatballs).
+- AI ideas have **Add** (recipe book) and **Use this week** (add and fill the first empty dinner).
+- Added `scripts/import-recipes.mjs` for bulk-loading frequent dishes from a git-ignored `imports/recipes.json`.
+- Open: the family's frequent-dinner list is still needed; the live AI button needs a logged-in test.

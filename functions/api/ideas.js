@@ -17,21 +17,27 @@ export async function onRequestPost({ request, env }) {
   try { body = await request.json(); } catch { return json({ error: "bad json" }, 400); }
 
   const liked = clean(body.liked, 15), all = clean(body.all, 60), staples = clean(body.staples, 60, 40), rejected = clean(body.rejected, 40);
+  const quick = body.quick !== false;
+  const maxMinutes = Number.isFinite(+body.maxMinutes)
+    ? Math.max(15, Math.min(120, +body.maxMinutes))
+    : quick ? 30 : 60;
 
   const system =
-    "You are a practical home-cooking assistant for a busy family. You reply with JSON only, no prose, no markdown.";
+    "You are a practical home-cooking assistant for a busy Norwegian family. You reply with JSON only, no prose, no markdown.";
   const user = [
-    "Suggest 4 NEW family dinner ideas.",
+    "Suggest 4 NEW family dinner ideas for a normal Norwegian supermarket (Rema 1000, Kiwi, Meny).",
+    `Every idea must be a weeknight dinner ready in ${maxMinutes} minutes or less.`,
     `Dishes the family already cooks: ${all.join("; ") || "none yet"}.`,
     `Dishes they especially like: ${liked.join("; ") || "unknown"}.`,
     `Ingredients they always have at home: ${staples.join(", ") || "unknown"}.`,
     `Do not suggest these or close variants: ${[...all, ...rejected].join("; ") || "none"}.`,
     "Rules:",
-    "- Mostly ordinary supermarket ingredients. At most 8 ingredients that are not always-at-home items.",
-    "- Avoid ingredients likely to be used once and wasted: exotic spices, specialty sauces, unusual produce, large packs. One unusual fresh vegetable is acceptable.",
-    "- Prefer dishes that reuse ingredients from the dishes they already cook.",
-    "- Prefer easy or medium effort.",
-    'Return ONLY a JSON array of 4 objects: [{"name": string, "why": one short sentence, "effort": 1|2|3 (1 easy, 2 medium, 3 involved), "ingredients": [strings, with rough quantities]}]',
+    "- Use at most 8 ingredients that are not in the always-at-home list.",
+    "- Only common spices and condiments: salt, pepper, paprika, oregano, thyme, curry, cumin, cinnamon, stock, soy sauce, mustard, ketchup, mayonnaise. No exotic or one-use spices or sauces.",
+    "- Avoid ingredients bought for one dish and wasted. At most one special fresh ingredient per dish.",
+    "- Prefer one pan or one pot, simple prep, and ingredients that repeat across the week.",
+    "- Prefer dishes similar to the ones they already like. No restaurant-style or advanced techniques.",
+    'Return ONLY a JSON array of 4 objects: [{"name": string, "why": one short sentence, "effort": 1|2|3 (1 easy, 2 medium, 3 involved), "minutes": whole number, "ingredients": [strings, with rough quantities]}]',
   ].join("\n");
 
   const model = env.AI_MODEL || "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
@@ -56,12 +62,19 @@ export async function onRequestPost({ request, env }) {
   if (arr && !Array.isArray(arr) && Array.isArray(arr.ideas)) arr = arr.ideas;
   if (!Array.isArray(arr)) return json({ error: "The AI answer could not be read. Try again." }, 502);
 
-  const ideas = arr.slice(0, 6).map((x) => ({
-    name: String((x && x.name) || "").trim().slice(0, 80),
-    why: String((x && x.why) || "").trim().slice(0, 200),
-    effort: [1, 2, 3].includes(+x.effort) ? +x.effort : 2,
-    ingredients: clean(x && x.ingredients, 14, 60),
-  })).filter((x) => x.name && x.ingredients.length);
+  const ideas = arr.slice(0, 8).map((x) => {
+    const effort = [1, 2, 3].includes(+x.effort) ? +x.effort : 2;
+    const minutes = Number.isFinite(+x.minutes)
+      ? Math.max(10, Math.min(240, Math.round(+x.minutes)))
+      : effort === 1 ? 30 : effort === 3 ? 60 : 45;
+    return {
+      name: String((x && x.name) || "").trim().slice(0, 80),
+      why: String((x && x.why) || "").trim().slice(0, 200),
+      effort,
+      minutes,
+      ingredients: clean(x && x.ingredients, 14, 60),
+    };
+  }).filter((x) => x.name && x.ingredients.length && (!quick || x.minutes <= maxMinutes + 5));
 
   return json({ ideas });
 }
