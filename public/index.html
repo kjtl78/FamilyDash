@@ -484,6 +484,8 @@ function suggestDinners(overwrite, quickOnly){
   });
   targets.forEach(function(d){
     var weekday=((d.getDay()+6)%7)<4,best=null,bs=-1e9;
+    var curName=((state.meals[iso(d)]||{}).d||"").trim();
+    var curRecipe=curName?findRecipe(curName):null;
     pool.forEach(function(r){
       if(used[r.id])return;
       var sc=(r.rating||3)*2;
@@ -491,9 +493,10 @@ function suggestDinners(overwrite, quickOnly){
       sc+=Math.min(since,30)/6;if(since<7)sc-=4;
       sc-=((r.effort||2)-1)*(weekday?1.5:0.5);
       sc-=(Math.max(0,minutesOf(r)-30)/10)*(weekday?1:0.3);
+      if(overwrite&&((curRecipe&&r.id===curRecipe.id)||(curName&&r.name.toLowerCase()===curName.toLowerCase())))sc-=50;
       var sp=specialsOf(r);sc-=sp.length*1.2;
       var shared=sp.filter(function(x){return picked[ikey(x)]}).length;sc+=Math.min(shared,3)*1.5;
-      sc+=Math.random()*1.5;
+      sc+=Math.random()*(overwrite?3:1.5);
       if(sc>bs){bs=sc;best=r}
     });
     if(!best)return;

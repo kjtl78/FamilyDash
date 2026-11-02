@@ -259,3 +259,8 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - The Access application now covers `familien-ds.pages.dev` (the old `familyhub-84t` hostname was replaced). Verified: the new site answers `302` to `cold-dust-02c3.cloudflareaccess.com` with the same application AUD, so `TEAM_DOMAIN` / `POLICY_AUD` stay unchanged.
 - The old `familyhub-84t.pages.dev` answers `200` for the static shell, but `/api/*` still requires an Access JWT and returns `401`; no family data is exposed. It remains a legacy backup.
 - Pending: sign in on the new URL and confirm saving; then the old project can be deleted.
+
+### 2026-11-02 · Entry 23 · “Re-suggest all” now varies the early days
+- Cause: the suggestion score was too stable (rating + recency) with only 1.5 points of random jitter, so the same top recipes kept winning Monday and Tuesday. Re-suggesting looked stuck on those days.
+- Fix: when overwriting, the day's current recipe is penalised by 50 points (matched by recipe id or by meal name), and the random jitter is 3 instead of 1.5. It still falls back to the current recipe if that is the only option.
+- Verified locally with four seeded recipes: first run Monday A→C and Tuesday B→D; second run Monday C→A and Tuesday D→B.
