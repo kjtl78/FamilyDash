@@ -37,6 +37,9 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Mobile: under 700px the Google Calendar and ukeplan switch to vertical lists instead of the squeezed horizontal grids; desktop keeps the dense strips. Times are 24-hour, events have accent separators, and day headings are bold (today in accent). The School header is Prev / week / Next.
 - School-letter intake: share a PDF from the phone into iCloud Drive `FamilyHub/Inbox` or Google Drive `My Drive/FamilyHub/Inbox`. The LaunchAgent watcher `com.familyhub.school-inbox` extracts it into `imports/pending/`, uploads the PDF to KV, and notifies; the import is reviewed before it is merged.
 - Source PDFs: stored in the private KV namespace `familyhub-school` (binding `SCHOOL`) and served at `/api/pdf/<key>` behind Cloudflare Access. Week 45 letters are attached to Solvei and Ellinor in the School tab.
+- Shopping: the Hub list is primary, with quantities, categories, Shopping mode, Share/Copy, and add-missing-ingredients from the dinner plan. The Bring! mirror is optional and read-only (credentials not set).
+- Ukeplan reminder: the Hub shows a reminder card Friday–Sunday and a School-tab note when a week has no homework; LaunchAgent `com.familyhub.ukeplan-reminder` runs Sundays 18:00 and creates a Reminders task plus notification if the coming week has no homework/3 items.
+- Calendar: Hub events merge into the 7-day strip and Today with member badges. Google’s iCal feed is read-only, so Hub events are not written to Google.
 
 ## Architecture
 - One HTML file, no build step. Tabs: Today, Calendar, Dinner, Shopping, School, More (chores, notes, contacts).
@@ -99,6 +102,9 @@ Recommended: **Cloudflare Pages** + **Pages Functions** + **D1** (or KV) for sha
 - [ ] Add the family's frequent dinners to the recipe book; `scripts/import-recipes.mjs` is ready for a list of names (ingredients/times optional).
 - [ ] Verify the live AI ideas button (quick filter ≤30 min, minutes shown) after login.
 - [ ] Optional: birthdays, recurring chores, pinned weekly menu, shopping list download, conflict-safe saves.
+- [ ] Decide on Bring!: use the Hub list, configure the read-only Bring! mirror, or keep both. Two-way Bring! sync is not planned (unofficial API).
+- [ ] Decide on Google write sync: an Apps Script bridge (Hub→Google add) or full Google OAuth (two-way).
+- [ ] Optional: auto-import ukeplan drafts with a review step; the current flow is share + reviewed import.
 
 ---
 
@@ -312,3 +318,9 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - Day/date headings use a blue theme token (`--day`), with today in the accent colour. The selected-day heading and today's month-grid number also use accent.
 - Calendar tab: the **Add event** form moved to the top and gained a date field; the old bottom form was removed. `addEvent` now uses `evDate`.
 - Verified locally with the real state: `E` badge for Ellinor, group symbol for family events, separated rules, top form, blue day headings.
+
+### 2026-11-02 · Entry 31 · Shopping, ukeplan reminder, Hub events in the calendar
+- Shopping: added quantities, **Shopping mode** (large checkboxes, add form hidden), **Share** (Web Share API with copy fallback), and **Add missing ingredients from this week**. The Bring! card is hidden until configured; Bring! remains optional and read-only because its API is unofficial.
+- Ukeplan: added an in-app reminder card Friday–Sunday and a School-tab note when a week has no homework. Added `scripts/ukeplan-reminder.mjs` and `scripts/install-ukeplan-reminder.sh`; LaunchAgent `com.familyhub.ukeplan-reminder` runs Sundays 18:00 and creates a Reminders task plus notification when the upcoming week has no homework/3 items. A test run created “Hent ukeplan for uke 46”; the school app still needs the manual share.
+- Calendar: local Hub events merge into the 7-day strip and Today with member badges; Google’s iCal feed is read-only. Two-way Google write needs OAuth or an Apps Script bridge, not configured.
+- Verified locally with the real state; the test Milk/Football items existed only in the local D1 copy.

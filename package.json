@@ -8,6 +8,7 @@
     "dev": "wrangler pages dev public --d1 DB=familyhub",
     "deploy": "wrangler pages deploy public --project-name familien-ds --branch main",
     "status": "wrangler pages deployment list --project-name familien-ds",
-    "db:init": "wrangler d1 execute familyhub --remote --file=schema.sql"
+    "db:init": "wrangler d1 execute familyhub --remote --file=schema.sql",
+    "remind:ukeplan": "node scripts/ukeplan-reminder.mjs"
   }
 }

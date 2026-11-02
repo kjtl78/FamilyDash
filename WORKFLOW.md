@@ -63,6 +63,21 @@ Reinstall or restart the watcher with:
 ./scripts/install-inbox-watcher.sh
 ```
 
+## Weekly ukeplan reminder
+
+The school app has no API, so the PDF still has to be shared by hand. What is automatic:
+
+- a Sunday 18:00 LaunchAgent checks the upcoming week in D1;
+- if the week has no homework (or fewer than three school items), it creates a Reminder in the **Family Hub** Reminders list (syncs to iPhone via iCloud) and shows a notification;
+- the Hub also shows an **Ukeplan reminder** card from Friday to Sunday and a note on the School tab when the viewed week has no plan.
+
+```bash
+./scripts/install-ukeplan-reminder.sh   # install / restart, Sundays 18:00
+npm run remind:ukeplan                  # test now
+```
+
+The first Reminders run may ask for automation permission — allow it.
+
 ## School PDF import
 
 1. Send the week letter PDF in chat.
@@ -74,6 +89,16 @@ node scripts/import-school.mjs imports/week45.json
 ```
 
 The importer adds missing family members, homework/activities/events, week notes (`weekNotes`: child, Monday date, text) and source PDFs; it skips duplicates and can remove stale notes (`removeNotes`). General notes are for non-school reminders only. It writes straight to D1, so the Hub shows it on the next poll.
+
+## Shopping list
+
+The Hub list is the shared list now: optional quantity, categories, **Shopping mode** (large checkboxes, no add form), **Share**, **Copy**, and **Add missing ingredients from this week** (pulls special ingredients from the dinner plan). It syncs through the same D1 state as everything else.
+
+Bring! is optional and **read-only** through its unofficial API. To mirror it, use a dedicated Bring! account, share the family list with it, and set `BRING_EMAIL` / `BRING_PASSWORD` secrets. Two-way Bring! sync is not implemented; use **Copy** to paste the Hub list into Bring! if needed.
+
+## Calendar
+
+Hub events are stored in D1 and appear in the 7-day strip alongside the Google Calendar events, with member badges. The Google side is the private iCal feed, which is **read-only**; writing Hub events into Google needs a Google OAuth app or an Apps Script bridge (not configured yet).
 
 ## Rules
 
