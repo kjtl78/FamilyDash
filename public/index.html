@@ -11,19 +11,19 @@
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
   --bg:#f6f3ee; --surface:#ffffff; --surface2:#efeae2; --text:#2a2723; --muted:#7a7268;
-  --line:#e2dccf; --accent:#d9622b; --accent-text:#ffffff; --good:#3f8f5a; --danger:#c0392b;
+  --line:#e2dccf; --accent:#d9622b; --accent-text:#ffffff; --good:#3f8f5a; --danger:#c0392b; --day:#2f7fbf;
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#1c1a17; --surface:#27241f; --surface2:#322e28; --text:#f1ece4; --muted:#a39a8d;
-    --line:#403a32; --accent:#f08a54; --accent-text:#1c1a17; --good:#6fc28a; --danger:#e8786a;
+    --line:#403a32; --accent:#f08a54; --accent-text:#1c1a17; --good:#6fc28a; --danger:#e8786a; --day:#7fb3d5;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#1c1a17; --surface:#27241f; --surface2:#322e28; --text:#f1ece4; --muted:#a39a8d;
-  --line:#403a32; --accent:#f08a54; --accent-text:#1c1a17; --good:#6fc28a; --danger:#e8786a;
+  --line:#403a32; --accent:#f08a54; --accent-text:#1c1a17; --good:#6fc28a; --danger:#e8786a; --day:#7fb3d5;
   color-scheme:dark;
 }
 *,*::before,*::after{box-sizing:inherit}
@@ -59,14 +59,18 @@ button.x:hover{color:var(--danger)}
 .empty{color:var(--muted);font-style:italic;padding:6px 0}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex:0 0 auto}
 .chip{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--surface2);color:var(--muted);white-space:nowrap}
+.whobox{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:4px;font-size:9px;font-weight:700;line-height:1;flex:0 0 auto;vertical-align:-2px;margin-right:2px;overflow:hidden}
+.whobox.sm{width:12px;height:12px;font-size:7.5px;border-radius:3px;margin-right:1px}
+.whobox.everyone{background:var(--surface2);color:var(--muted);font-size:10px}
 .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.cal .dow{font-size:11px;color:var(--muted);text-align:center;text-transform:uppercase}
+.cal .dow{font-size:11px;color:var(--day);text-align:center;text-transform:uppercase}
 .day{min-height:64px;background:var(--surface2);border-radius:8px;padding:4px;cursor:pointer;border:2px solid transparent;overflow:hidden}
 .day.out{opacity:.4}
 .day.today{border-color:var(--accent)}
 .day.sel{background:var(--surface);border-color:var(--text)}
 .day .n{font-size:12px;font-weight:600}
+.day.today .n{color:var(--accent)}
 .day .ev{font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;padding-left:5px;border-left:3px solid var(--accent)}
 .dotrow{display:none}
 .week{overflow-x:auto}
@@ -118,14 +122,15 @@ nav button{display:flex;align-items:center;gap:6px}
 .weekstrip{display:grid;grid-template-columns:repeat(7,minmax(76px,1fr));gap:6px;min-width:560px}
 .wday{background:var(--surface2);border-radius:8px;padding:5px 6px;min-height:92px;display:flex;flex-direction:column;gap:3px;color:var(--text);text-decoration:none}
 .wday.today{box-shadow:inset 0 0 0 2px var(--accent)}
-.wday .wd{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;align-items:baseline}
-.wday .wd b{color:var(--text);font-size:12px}
-.wev{font-size:10.5px;line-height:1.25;border-left:2px solid var(--accent);padding-left:4px;white-space:normal;overflow-wrap:anywhere;width:100%;box-sizing:border-box}
+.wday .wd{font-size:11px;color:var(--day);display:flex;justify-content:space-between;align-items:baseline}
+.wday .wd b{color:var(--day);font-size:12px}
+.wday.today .wd,.wday.today .wd b{color:var(--accent)}
+.wev{font-size:10.5px;line-height:1.25;border-left:2px solid var(--accent);padding-left:4px;white-space:normal;overflow-wrap:anywhere;width:100%;box-sizing:border-box;margin:2px 0}
 .wev b{font-weight:600}
 .wev.all{border-color:var(--muted);color:var(--muted)}
 .wev.none{border:0;padding-left:0;color:var(--muted)}
 .schoolweek{display:grid;grid-template-columns:88px repeat(5,minmax(96px,1fr));gap:4px;min-width:600px}
-.schoolweek .sh{font-size:11px;color:var(--muted);text-align:center;padding:2px 0}
+.schoolweek .sh{font-size:11px;color:var(--day);text-align:center;padding:2px 0}
 .schoolweek .sh.today{color:var(--accent);font-weight:700}
 .schoolweek .sn{font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px;padding-right:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .schoolweek .sc{background:var(--surface2);border-radius:8px;padding:4px 5px;min-height:74px}
@@ -145,17 +150,17 @@ nav button{display:flex;align-items:center;gap:6px}
 .gcalmob,.schoolmob{display:none}
 .gday{border-bottom:1px solid var(--line);padding:7px 0}
 .gday:last-child{border-bottom:0}
-.gdh{font-size:14px;font-weight:700;color:var(--text);display:flex;justify-content:space-between;margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid var(--line);text-decoration:none}
+.gdh{font-size:14px;font-weight:700;color:var(--day);display:flex;justify-content:space-between;margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid var(--line);text-decoration:none}
 .gdh.today{color:var(--accent)}
 .gday ul{margin:0;padding:0;list-style:none}
-.gday li{font-size:13px;padding:2px 0 2px 7px;display:flex;gap:6px;border-left:2px solid var(--accent)}
+.gday li{font-size:13px;padding:2px 0 2px 7px;display:flex;gap:6px;border-left:2px solid var(--accent);margin:3px 0}
 .gday li.all{border-left-color:var(--muted)}
 .gday li b{font-weight:600;white-space:nowrap}
 .smlist{margin-top:2px}
 .smwho{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;margin:12px 0 4px}
 .smday{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)}
 .smday:last-child{border-bottom:0}
-.smdate{flex:0 0 48px;font-size:12px;font-weight:600;color:var(--text);padding-top:1px}
+.smdate{flex:0 0 48px;font-size:12px;font-weight:600;color:var(--day);padding-top:1px}
 .smdate.today{color:var(--accent)}
 .smitems{flex:1;min-width:0}
 .smitems .sitem{font-size:12.5px;padding-right:16px}
@@ -313,11 +318,46 @@ function render(){
   if(active&&active.id&&$(active.id)){try{$(active.id).focus()}catch(e){}}
 }
 
+function escapeRe(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}
+function textOn(hex){
+  var h=String(hex||"").replace("#","");
+  if(h.length!==6)return "#fff";
+  var r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
+  return (0.299*r+0.587*g+0.114*b)>150?"#2a2723":"#fff";
+}
+function stripMemberName(title,name){
+  if(!name)return title;
+  var re=new RegExp("\\b"+escapeRe(name)+"\\b","i");
+  return title.replace(re,"").replace(/\s{2,}/g," ").replace(/^\s*[:–-]\s*/,"").trim();
+}
+function cleanEvent(e){
+  var ids=[],title=String(e.title||"");
+  if(e.who){
+    ids.push(e.who);
+    var m=member(e.who);
+    if(m)title=stripMemberName(title,m.name);
+  }else{
+    state.members.forEach(function(m){
+      var re=new RegExp("\\b"+escapeRe(m.name)+"\\b","i");
+      if(re.test(title)){ids.push(m.id);title=title.replace(re,"")}
+    });
+    if(ids.length)title=title.replace(/\s{2,}/g," ").replace(/^\s*[:–-]\s*/,"").trim();
+  }
+  return {ids:ids,title:title};
+}
+function whoBoxes(ids,small){
+  if(!ids||!ids.length)return '<span class="whobox everyone'+(small?' sm':'')+'" title="Everyone">👪</span>';
+  return ids.map(function(id){
+    var m=member(id);if(!m)return "";
+    return '<span class="whobox'+(small?' sm':'')+'" style="background:'+m.color+';color:'+textOn(m.color)+'" title="'+esc(m.name)+'">'+esc(m.name.charAt(0).toUpperCase())+'</span>';
+  }).join("");
+}
 function eventsOn(d){
   return state.events.filter(function(e){return e.date===d}).sort(function(a,b){return (a.time||"").localeCompare(b.time||"")});
 }
 function eventLi(e){
-  return '<li><span class="dot" style="background:'+colorOf(e.who)+'"></span><span class="t"><b>'+(e.time?esc(e.time)+" ":"")+'</b>'+esc(e.title)+' <span class="chip">'+esc(nameOf(e.who))+'</span></span><button class="x" data-act="delEvent" data-id="'+e.id+'" title="Delete">×</button></li>';
+  var info=cleanEvent(e);
+  return '<li>'+whoBoxes(info.ids)+'<span class="t"><b>'+(e.time?esc(e.time)+" ":"")+'</b>'+esc(info.title)+'</span><button class="x" data-act="delEvent" data-id="'+e.id+'" title="Delete">×</button></li>';
 }
 
 function weekNotesFor(week, filter){
@@ -353,20 +393,21 @@ function vCal(){
   var start=mondayOf(first);
   var title=first.toLocaleDateString(undefined,{month:"long",year:"numeric"});
   var today=iso(new Date());
-  var h=gcalWeek()+'<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))"><div class="card calcard" style="grid-column:span 2;min-width:0">';
+  var h='<div class="card" style="margin-bottom:14px"><h2>Add event</h2><div class="row"><input type="text" id="evTitle" placeholder="What’s happening?"><input type="date" id="evDate" value="'+esc(selDate)+'"><input type="time" id="evTime"><select id="evWho">'+whoOptions("")+'</select><button class="btn" data-act="addEvent">Add</button></div></div>';
+  h+=gcalWeek()+'<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))"><div class="card calcard" style="grid-column:span 2;min-width:0">';
   h+='<div class="cal-head"><button class="ghost" data-act="prevM">‹</button><h2 style="font-size:18px">'+esc(title)+'</h2><span class="row"><button class="ghost" data-act="todayM">Today</button><button class="ghost" data-act="nextM">›</button></span></div>';
   h+='<div class="cal">'+["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(function(d){return '<div class="dow">'+d+'</div>'}).join("");
   for(var i=0;i<42;i++){
     var d=addDays(start,i),k=iso(d),es=eventsOn(k);
     h+='<div class="day'+(d.getMonth()!==calM?" out":"")+(k===today?" today":"")+(k===selDate?" sel":"")+'" data-act="selDay" data-date="'+k+'"><div class="n">'+d.getDate()+'</div>'+
-       es.slice(0,3).map(function(e){return '<div class="ev" style="border-color:'+colorOf(e.who)+'">'+esc(e.title)+'</div>'}).join("")+
+       es.slice(0,3).map(function(e){var info=cleanEvent(e);return '<div class="ev" style="border-color:'+colorOf(info.ids[0]||"")+'">'+whoBoxes(info.ids,true)+esc(info.title)+'</div>'}).join("")+
        (es.length?'<div class="dotrow">'+es.slice(0,4).map(function(e){return '<span class="dot" style="background:'+colorOf(e.who)+'"></span>'}).join("")+'</div>':'')+'</div>';
   }
   h+='</div></div>';
-  h+='<div class="card"><h2>'+esc(fmtDate(selDate))+'</h2>';
+  h+='<div class="card"><h2 style="color:'+(selDate===today?'var(--accent)':'var(--day)')+'">'+esc(fmtDate(selDate))+'</h2>';
   var es2=eventsOn(selDate);
   h+=es2.length?'<ul class="list">'+es2.map(eventLi).join("")+'</ul>':'<div class="empty">No events this day.</div>';
-  h+='<div class="cat">Add event</div><div class="row"><input type="text" id="evTitle" placeholder="What’s happening?"><input type="time" id="evTime"><select id="evWho">'+whoOptions("")+'</select><button class="btn" data-act="addEvent">Add</button></div></div>';
+  h+='</div>';
   return h+'</div>';
 }
 
@@ -457,7 +498,8 @@ function gcalWeek(){
     h+='<a class="wday'+(i===0?' today':'')+'" href="'+gurl+'" target="_blank" rel="noopener" title="Open Google Calendar"><div class="wd"><span>'+esc(d.toLocaleDateString(undefined,{weekday:"short"}))+'</span><b>'+d.getDate()+'</b></div>';
     if(!list.length)h+='<div class="wev none">–</div>';
     list.forEach(function(e){
-      h+='<div class="wev'+(e.allDay?' all':'')+'" title="'+esc(e.title)+'">'+(e.allDay?'':'<b>'+esc(hhmm(e.start))+'</b> ')+esc(e.title)+'</div>';
+      var info=cleanEvent(e);
+      h+='<div class="wev'+(e.allDay?' all':'')+'" title="'+esc(e.title)+'">'+whoBoxes(info.ids)+' '+(e.allDay?'':'<b>'+esc(hhmm(e.start))+'</b> ')+esc(info.title)+'</div>';
     });
     h+='</a>';
   }
@@ -474,7 +516,7 @@ function gcalWeek(){
       var mgurl="https://calendar.google.com/calendar/r/day/"+md.getFullYear()+"/"+(md.getMonth()+1)+"/"+md.getDate();
       h+='<div class="gday"><a class="gdh'+(mj2===0?' today':'')+'" href="'+mgurl+'" target="_blank" rel="noopener"><span>'+esc(md.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"}))+'</span>'+(mj2===0?'<span>Today</span>':'')+'</a>';
       if(!mlist.length)h+='<div class="empty">–</div>';
-      else h+='<ul>'+mlist.map(function(e){return '<li'+(e.allDay?' class="all"':'')+'><b>'+(e.allDay?'All day':esc(hhmm(e.start)))+'</b><span>'+esc(e.title)+'</span></li>'}).join("")+'</ul>';
+      else h+='<ul>'+mlist.map(function(e){var info=cleanEvent(e);return '<li'+(e.allDay?' class="all"':'')+'>'+whoBoxes(info.ids)+'<b>'+(e.allDay?'All day':esc(hhmm(e.start)))+'</b><span>'+esc(info.title)+'</span></li>'}).join("")+'</ul>';
       h+='</div>';
     }
     h+='</div>';
@@ -767,7 +809,7 @@ var actions={
   nextM:function(){calM++;if(calM>11){calM=0;calY++}render()},
   todayM:function(){var n=new Date();calY=n.getFullYear();calM=n.getMonth();selDate=iso(n);render()},
   selDay:function(el){selDate=el.dataset.date;render()},
-  addEvent:function(){var t=val("evTitle");if(!t)return;state.events.push({id:uid(),date:selDate,time:val("evTime"),title:t,who:val("evWho")});changed()},
+  addEvent:function(){var t=val("evTitle"),date=val("evDate")||selDate;if(!t||!/^\d{4}-\d{2}-\d{2}$/.test(date))return;state.events.push({id:uid(),date:date,time:val("evTime"),title:t,who:val("evWho")});changed()},
   delEvent:function(el){state.events=del("events",el.dataset.id);changed()},
   prevW:function(){weekStart=addDays(weekStart,-7);render()},
   nextW:function(){weekStart=addDays(weekStart,7);render()},

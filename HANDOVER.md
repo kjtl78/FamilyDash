@@ -29,7 +29,8 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Tabs: Today, Calendar, Dinner (dinner-only planner + recipes + AI ideas), Shopping (Bring! mirror + Hub list), School, More (chores, notes, contacts, backup).
 - Storage: `GET/PUT /api/state` against D1 table `kv` (row id `family`), client polls every 15 s and on focus; last writer wins.
 - Config: D1 binding `DB` and table `kv` exist; KV binding `SCHOOL` points at namespace `familyhub-school` (`99c2fdf65a324d1f8343aa581184f2cb`); `TEAM_DOMAIN` = `cold-dust-02c3.cloudflareaccess.com` and `POLICY_AUD` = `8ba3272a…f87d32c` are set on the Pages project; the `AI` binding exists. These were copied to the new `familien-ds` project through the Pages API; `GCAL_ICS_URL` was copied with `wrangler pages secret put`. Important: Pages Git builds ignore `[vars]`, and KV bindings from `wrangler.toml` did not apply either, so project config must be set through the API/dashboard. `BRING_EMAIL` / `BRING_PASSWORD` are not set, so Bring! returns 501.
-- Google Calendar: connected read-only via the `GCAL_ICS_URL` secret (calendar “Familien DDS”, 493 events). Every event is shown (no hidden “+ n” rows); long titles wrap, and each day plus “Open calendar” links to Google Calendar.
+- Google Calendar: connected read-only via the `GCAL_ICS_URL` secret (calendar “Familien DDS”, 493 events). Every event is shown (no hidden “+ n” rows); long titles wrap, and each day plus “Open calendar” links to Google Calendar. Event rows carry boxed member initials (or 👪 for Everyone).
+- Calendar: the Add event form is at the top with a date field; local events use the same member badges. Member names are stripped from event titles when redundant. Day headings are blue (`--day`); today uses the accent colour.
 - Week notes: school goals/reminders live in `state.weekNotes` (child, Monday date, text) and render in a narrow strip under the Today calendar and in the School tab. More → Notes is for general household notes only.
 - Live data: family members Solvei (1. trinn) and Ellinor (4. trinn); the week 45 school plan is imported (14 items) plus 3 week notes shown under the Today calendar. Ellinor is in B class, so the week 46 gym reminder is on Monday 9.11.
 - Dinner planner: breakfast and lunch removed; recipes store `minutes` and optional day preferences (colored tags, per-row day toggles; 70% of suggestion runs keep tagged dishes on their days, 30% are a free mix); “⚡ Quick week (≤30 min)” fills only quick recipes; AI ideas target ordinary Norwegian supermarket ingredients and short cooking times.
@@ -304,3 +305,10 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - Mobile calendar events now have the same accent vertical rule as the desktop chips; all-day items use a muted rule.
 - Mobile day headings are 14px bold text with a bottom rule, and today is in the accent colour. Ukeplan day labels are 12px bold, with today in accent.
 - Verified at 390 px with the real calendar: 08:00 / 13:40 / 17:25 etc., separators visible, Monday/Today prominent.
+
+### 2026-11-02 · Entry 30 · Event badges, split rules, day colours, Add event at top
+- Event rows now carry a compact boxed indicator: the member's initial on their colour, with contrast-aware text; Everyone uses the 👪 symbol. If a member's name appears in the title, it is removed and replaced by the badge (e.g. “Ellinor trommetime” becomes `E` + “trommetime”). Applied to the Google strip (desktop and mobile), the month grid, and the selected-day list.
+- Event rules are separated per row with margins, so the vertical accent line marks each time rather than running continuously.
+- Day/date headings use a blue theme token (`--day`), with today in the accent colour. The selected-day heading and today's month-grid number also use accent.
+- Calendar tab: the **Add event** form moved to the top and gained a date field; the old bottom form was removed. `addEvent` now uses `evDate`.
+- Verified locally with the real state: `E` badge for Ellinor, group symbol for family events, separated rules, top form, blue day headings.
