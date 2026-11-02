@@ -217,3 +217,11 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - Replaced the generic week 46 note with “Uke 46 · Ellinor (B-klasse): gymdag mandag 9.11. Ta med gymtøy, håndkle og såpe.”
 - Extended `scripts/import-school.mjs` with `removeNotes`, so a correction can replace a stale note instead of piling up duplicates.
 - Still pending: the iPhone share-sheet test and checking the PDF links after login.
+
+### 2026-11-02 · Entry 18 · Dense one-screen layout
+- Replaced the vertical 7-day Google Calendar card with a horizontal 7-column strip (`gcalWeek`). Each day is one column; up to 4 events plus a `+n` count; long titles truncate with a tooltip.
+- Replaced the School tab's vertical day list with a compact grid: rows = children, columns = Mon–Fri (`schoolWeekTable`). Homework keeps its checkbox; activities/events keep icons; delete is a small × in the corner.
+- Today now starts with the calendar strip and the current-week ukeplan, then meals/shopping/chores/family. Removed the duplicate “Today” and “Coming up” cards.
+- School source PDFs are compact links under the grid; the add/import forms are collapsed in `<details>`.
+- Mobile: both week strips scroll horizontally; the rest stacks. Verified locally with the real D1 state at desktop and mobile widths, and with the real iCal feed via a temporary `.dev.vars` (DEV=1, local only).
+- `.openchamber/` (local screenshots) is now git-ignored.
