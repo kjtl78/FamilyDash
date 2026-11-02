@@ -145,16 +145,18 @@ nav button{display:flex;align-items:center;gap:6px}
 .gcalmob,.schoolmob{display:none}
 .gday{border-bottom:1px solid var(--line);padding:7px 0}
 .gday:last-child{border-bottom:0}
-.gdh{font-size:12px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:3px;text-decoration:none}
+.gdh{font-size:14px;font-weight:700;color:var(--text);display:flex;justify-content:space-between;margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid var(--line);text-decoration:none}
 .gdh.today{color:var(--accent)}
 .gday ul{margin:0;padding:0;list-style:none}
-.gday li{font-size:13px;padding:2px 0;display:flex;gap:6px}
+.gday li{font-size:13px;padding:2px 0 2px 7px;display:flex;gap:6px;border-left:2px solid var(--accent)}
+.gday li.all{border-left-color:var(--muted)}
 .gday li b{font-weight:600;white-space:nowrap}
 .smlist{margin-top:2px}
 .smwho{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;margin:12px 0 4px}
 .smday{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)}
 .smday:last-child{border-bottom:0}
-.smdate{flex:0 0 48px;font-size:11px;color:var(--muted);padding-top:1px}
+.smdate{flex:0 0 48px;font-size:12px;font-weight:600;color:var(--text);padding-top:1px}
+.smdate.today{color:var(--accent)}
 .smitems{flex:1;min-width:0}
 .smitems .sitem{font-size:12.5px;padding-right:16px}
 .schoolmob .sitem .x{position:absolute;right:0;top:0;font-size:12px;min-width:0;min-height:0;padding:0 2px;line-height:1}
@@ -442,7 +444,7 @@ function loadBring(){
      softRender();
    }).catch(function(){bring.error="Could not load Bring!.";softRender()});
 }
-function hhmm(iso8601){return new Date(iso8601).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}
+function hhmm(iso8601){return new Date(iso8601).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false})}
 function gcalWeek(){
   var h='<div class="card" style="margin-bottom:14px"><h2 class="gcalhead">Google Calendar · 7 days <span class="row"><a href="https://calendar.google.com/" target="_blank" rel="noopener">Open calendar</a><a data-act="reloadGcal">Refresh</a></span></h2>';
   if(gcal.events===null)return h+'<div class="empty">'+(gcal.error?esc(gcal.error):"Loading…")+'</div></div>';
@@ -472,7 +474,7 @@ function gcalWeek(){
       var mgurl="https://calendar.google.com/calendar/r/day/"+md.getFullYear()+"/"+(md.getMonth()+1)+"/"+md.getDate();
       h+='<div class="gday"><a class="gdh'+(mj2===0?' today':'')+'" href="'+mgurl+'" target="_blank" rel="noopener"><span>'+esc(md.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"}))+'</span>'+(mj2===0?'<span>Today</span>':'')+'</a>';
       if(!mlist.length)h+='<div class="empty">–</div>';
-      else h+='<ul>'+mlist.map(function(e){return '<li><b>'+(e.allDay?'All day':esc(hhmm(e.start)))+'</b><span>'+esc(e.title)+'</span></li>'}).join("")+'</ul>';
+      else h+='<ul>'+mlist.map(function(e){return '<li'+(e.allDay?' class="all"':'')+'><b>'+(e.allDay?'All day':esc(hhmm(e.start)))+'</b><span>'+esc(e.title)+'</span></li>'}).join("")+'</ul>';
       h+='</div>';
     }
     h+='</div>';
@@ -484,7 +486,7 @@ function bringCard(){
   var h='<div class="card" style="margin-bottom:14px"><h2>From Bring!'+(bring.name?' · '+esc(bring.name):'')+' <a data-act="reloadBring">Refresh</a></h2>';
   if(bring.items===null)return h+'<div class="empty">'+(bring.error?esc(bring.error):"Loading…")+'</div></div>';
   h+=bring.items.length?'<ul class="list">'+bring.items.map(function(it){return '<li><span class="t">'+esc(it.name)+(it.spec?' <span class="chip">'+esc(it.spec)+'</span>':'')+'</span></li>'}).join("")+'</ul>':'<div class="empty">The Bring! list is empty.</div>';
-  return h+'<div style="color:var(--muted);font-size:12px;margin-top:6px">Read-only copy. Add and tick items in the Bring! app.'+(bring.at?' Updated '+esc(bring.at.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})):'')+(bring.error?' · '+esc(bring.error):'')+'</div></div>';
+  return h+'<div style="color:var(--muted);font-size:12px;margin-top:6px">Read-only copy. Add and tick items in the Bring! app.'+(bring.at?' Updated '+esc(bring.at.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false})):'')+(bring.error?' · '+esc(bring.error):'')+'</div></div>';
 }
 
 /* ---------- recipes and dinner suggestions ---------- */
@@ -644,7 +646,7 @@ function schoolWeekTable(start, filter){
       var k=iso(d),items=itemsFor(m.id,k);
       if(!items.length)return;
       any=true;
-      h+='<div class="smday"><div class="smdate">'+esc(d.toLocaleDateString(undefined,{weekday:"short"}))+' '+d.getDate()+'</div><div class="smitems">';
+      h+='<div class="smday"><div class="smdate'+(k===today?' today':'')+'">'+esc(d.toLocaleDateString(undefined,{weekday:"short"}))+' '+d.getDate()+'</div><div class="smitems">';
       items.forEach(function(x){h+=schoolItem(x)});
       h+='</div></div>';
     });

@@ -33,7 +33,7 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Week notes: school goals/reminders live in `state.weekNotes` (child, Monday date, text) and render in a narrow strip under the Today calendar and in the School tab. More → Notes is for general household notes only.
 - Live data: family members Solvei (1. trinn) and Ellinor (4. trinn); the week 45 school plan is imported (14 items) plus 3 week notes shown under the Today calendar. Ellinor is in B class, so the week 46 gym reminder is on Monday 9.11.
 - Dinner planner: breakfast and lunch removed; recipes store `minutes` and optional day preferences (colored tags, per-row day toggles; 70% of suggestion runs keep tagged dishes on their days, 30% are a free mix); “⚡ Quick week (≤30 min)” fills only quick recipes; AI ideas target ordinary Norwegian supermarket ingredients and short cooking times.
-- Mobile: under 700px the Google Calendar and ukeplan switch to vertical lists instead of the squeezed horizontal grids; desktop keeps the dense strips. The School header is Prev / week / Next.
+- Mobile: under 700px the Google Calendar and ukeplan switch to vertical lists instead of the squeezed horizontal grids; desktop keeps the dense strips. Times are 24-hour, events have accent separators, and day headings are bold (today in accent). The School header is Prev / week / Next.
 - School-letter intake: share a PDF from the phone into iCloud Drive `FamilyHub/Inbox` or Google Drive `My Drive/FamilyHub/Inbox`. The LaunchAgent watcher `com.familyhub.school-inbox` extracts it into `imports/pending/`, uploads the PDF to KV, and notifies; the import is reviewed before it is merged.
 - Source PDFs: stored in the private KV namespace `familyhub-school` (binding `SCHOOL`) and served at `/api/pdf/<key>` behind Cloudflare Access. Week 45 letters are attached to Solvei and Ellinor in the School tab.
 
@@ -298,3 +298,9 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - Extended `scripts/import-school.mjs` with `weekNotes` (keeps `removeNotes`); migrated the live data: 3 notes removed, 3 week notes added.
 - Google Calendar: removed the 4-event cap and the non-clickable “+ n”. All events show, titles wrap, and the strip grows vertically. Each day cell and the mobile day header link to Google Calendar for that date; the card header has an “Open calendar” link.
 - Verified locally with the real state and iCal feed at desktop and mobile.
+
+### 2026-11-02 · Entry 29 · Mobile clock, separators, day headers
+- Forced 24-hour time in `hhmm` and the Bring! “updated” time (`hour12: false`), so event times read 16:50 rather than 4:50 PM regardless of the browser locale.
+- Mobile calendar events now have the same accent vertical rule as the desktop chips; all-day items use a muted rule.
+- Mobile day headings are 14px bold text with a bottom rule, and today is in the accent colour. Ukeplan day labels are 12px bold, with today in accent.
+- Verified at 390 px with the real calendar: 08:00 / 13:40 / 17:25 etc., separators visible, Monday/Today prominent.
