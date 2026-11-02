@@ -68,13 +68,14 @@ button.x:hover{color:var(--danger)}
 .whobox.everyone{background:var(--surface2);color:var(--muted);font-size:10px}
 .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.cal .dow{font-size:11px;color:var(--day);text-align:center;text-transform:uppercase}
+.cal .dow{font-size:11px;color:var(--accent);text-align:center;text-transform:uppercase}
 .day{min-height:64px;background:var(--surface2);border-radius:8px;padding:4px;cursor:pointer;border:2px solid transparent;overflow:hidden}
 .day.out{opacity:.4}
-.day.today{border-color:var(--accent)}
+.day.today{border-color:var(--day)}
 .day.sel{background:var(--surface);border-color:var(--text)}
 .day .n{font-size:12px;font-weight:600}
-.day.today .n{color:var(--accent)}
+.day.today .n{color:var(--day)}
+.day.today.sel{border-color:var(--day)}
 .day .ev{font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;padding-left:5px;border-left:3px solid var(--accent)}
 .dotrow{display:none}
 .week{overflow-x:auto}
@@ -82,7 +83,7 @@ button.x:hover{color:var(--danger)}
 .week th{font-size:12px;color:var(--muted);font-weight:600;text-align:left;padding:2px 4px}
 .week td input{width:100%}
 .week td.lbl{font-size:12px;color:var(--muted);width:70px}
-.week th.today{color:var(--accent)}
+.week th.today{color:var(--day)}
 .cat{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:12px 0 2px}
 .members{display:flex;flex-wrap:wrap;gap:6px}
 .m{display:flex;align-items:center;gap:6px;background:var(--surface2);border-radius:999px;padding:3px 4px 3px 10px;font-size:13px}
@@ -92,7 +93,7 @@ button.x:hover{color:var(--danger)}
 nav button{display:flex;align-items:center;gap:6px}
 .mob{display:none}
 .mday{background:var(--surface2);border-radius:12px;padding:10px 12px;margin-top:10px}
-.mday.today{outline:2px solid var(--accent)}
+.mday.today{outline:2px solid var(--day)}
 .mday h3{font-size:15px;margin-bottom:6px}
 .mday label{display:flex;align-items:center;gap:8px;margin-top:6px}
 .mday label span{width:76px;font-size:12px;color:var(--muted);flex:0 0 auto}
@@ -125,20 +126,20 @@ nav button{display:flex;align-items:center;gap:6px}
 .weekstrip-wrap,.schoolweek-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .weekstrip{display:grid;grid-template-columns:repeat(7,minmax(76px,1fr));gap:6px;min-width:560px}
 .wday{background:var(--surface2);border-radius:8px;padding:5px 6px;min-height:92px;display:flex;flex-direction:column;gap:3px;color:var(--text);text-decoration:none}
-.wday.today{box-shadow:inset 0 0 0 2px var(--accent)}
-.wday .wd{font-size:11px;color:var(--day);display:flex;justify-content:space-between;align-items:baseline}
-.wday .wd b{color:var(--day);font-size:12px}
-.wday.today .wd,.wday.today .wd b{color:var(--accent)}
+.wday.today{box-shadow:inset 0 0 0 2px var(--day)}
+.wday .wd{font-size:11px;color:var(--accent);display:flex;justify-content:space-between;align-items:baseline}
+.wday .wd b{color:var(--accent);font-size:12px}
+.wday.today .wd,.wday.today .wd b{color:var(--day)}
 .wev{font-size:10.5px;line-height:1.25;border-left:2px solid var(--accent);padding-left:4px;white-space:normal;overflow-wrap:anywhere;width:100%;box-sizing:border-box;margin:2px 0}
 .wev b{font-weight:600}
 .wev.all{border-color:var(--muted);color:var(--muted)}
 .wev.none{border:0;padding-left:0;color:var(--muted)}
 .schoolweek{display:grid;grid-template-columns:88px repeat(5,minmax(96px,1fr));gap:4px;min-width:600px}
-.schoolweek .sh{font-size:11px;color:var(--day);text-align:center;padding:2px 0}
-.schoolweek .sh.today{color:var(--accent);font-weight:700}
+.schoolweek .sh{font-size:11px;color:var(--accent);text-align:center;padding:2px 0}
+.schoolweek .sh.today{color:var(--day);font-weight:700}
 .schoolweek .sn{font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px;padding-right:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .schoolweek .sc{background:var(--surface2);border-radius:8px;padding:4px 5px;min-height:74px}
-.schoolweek .sc.today{box-shadow:inset 0 0 0 1px var(--accent)}
+.schoolweek .sc.today{box-shadow:inset 0 0 0 1px var(--day)}
 .sitem{font-size:10.5px;line-height:1.25;margin-bottom:3px;overflow-wrap:anywhere;position:relative;padding-right:13px}
 .sitem.done{text-decoration:line-through;color:var(--muted)}
 .sitem input{width:14px;height:14px;margin:0 3px 0 0;vertical-align:-2px;accent-color:var(--accent)}
@@ -154,8 +155,8 @@ nav button{display:flex;align-items:center;gap:6px}
 .gcalmob,.schoolmob{display:none}
 .gday{border-bottom:1px solid var(--line);padding:7px 0}
 .gday:last-child{border-bottom:0}
-.gdh{font-size:14px;font-weight:700;color:var(--day);display:flex;justify-content:space-between;margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid var(--line);text-decoration:none}
-.gdh.today{color:var(--accent)}
+.gdh{font-size:14px;font-weight:700;color:var(--accent);display:flex;justify-content:space-between;margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid var(--line);text-decoration:none}
+.gdh.today{color:var(--day)}
 .gday ul{margin:0;padding:0;list-style:none}
 .gday li{font-size:13px;padding:2px 0 2px 7px;display:flex;gap:6px;border-left:2px solid var(--accent);margin:3px 0}
 .gday li.all{border-left-color:var(--muted)}
@@ -164,8 +165,8 @@ nav button{display:flex;align-items:center;gap:6px}
 .smwho{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;margin:12px 0 4px}
 .smday{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)}
 .smday:last-child{border-bottom:0}
-.smdate{flex:0 0 48px;font-size:12px;font-weight:600;color:var(--day);padding-top:1px}
-.smdate.today{color:var(--accent)}
+.smdate{flex:0 0 48px;font-size:12px;font-weight:600;color:var(--accent);padding-top:1px}
+.smdate.today{color:var(--day)}
 .smitems{flex:1;min-width:0}
 .smitems .sitem{font-size:12.5px;padding-right:16px}
 .schoolmob .sitem .x{position:absolute;right:0;top:0;font-size:12px;min-width:0;min-height:0;padding:0 2px;line-height:1}
@@ -426,7 +427,7 @@ function vCal(){
        (es.length?'<div class="dotrow">'+es.slice(0,4).map(function(e){return '<span class="dot" style="background:'+colorOf(e.who)+'"></span>'}).join("")+'</div>':'')+'</div>';
   }
   h+='</div></div>';
-  h+='<div class="card"><h2 style="color:'+(selDate===today?'var(--accent)':'var(--day)')+'">'+esc(fmtDate(selDate))+'</h2>';
+  h+='<div class="card"><h2 style="color:'+(selDate===today?'var(--day)':'var(--accent)')+'">'+esc(fmtDate(selDate))+'</h2>';
   var es2=eventsOn(selDate);
   h+=es2.length?'<ul class="list">'+es2.map(eventLi).join("")+'</ul>':'<div class="empty">No events this day.</div>';
   h+='</div>';
