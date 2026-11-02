@@ -102,14 +102,15 @@ async function main() {
     process.exit(1);
   }
 
-  const res = spawnSync("curl", ["-fsS", "-o", "/dev/null", "-w", "%{http_code}", LIVE_URL], { encoding: "utf8" });
-  const code = (res.stdout || "").trim();
-  if (code !== "200") {
+  const res = spawnSync("curl", ["-fsS", "-o", "/dev/null", "-w", "%{http_code} %{redirect_url}", LIVE_URL], { encoding: "utf8" });
+  const [code, redirect = ""] = (res.stdout || "").trim().split(" ");
+  const protectedByAccess = code === "302" && /cloudflareaccess\.com/.test(redirect);
+  if (code !== "200" && !protectedByAccess) {
     console.error(`\n✗ Deployed, but ${LIVE_URL} answered ${code || "nothing"}.`);
     process.exit(1);
   }
 
-  console.log(`\n✓ Live. Test it at ${LIVE_URL}`);
+  console.log(`\n✓ Live${protectedByAccess ? " (protected by Cloudflare Access)" : ""}. Test it at ${LIVE_URL}`);
   console.log(`  Commit ${sha} · deployment ${found.Deployment}`);
 }
 
