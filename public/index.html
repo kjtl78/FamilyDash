@@ -155,7 +155,9 @@ nav button{display:flex;align-items:center;gap:6px}
 .schoolmob .sitem .x{position:absolute;right:0;top:0;font-size:12px;min-width:0;min-height:0;padding:0 2px;line-height:1}
 .chip.daytag{background:#c79a1c;color:#2a2723;font-weight:600}
 .chip.daytag.weekday{background:#2f7fbf;color:#fff}
-select.daysel{font-size:12px;min-height:0;padding:2px 4px;border-radius:999px;background:var(--surface2);max-width:112px}
+.daybtn{font-size:9.5px;line-height:1;min-width:28px;height:26px;padding:0 3px;border-radius:6px;border:1px solid var(--line);background:var(--surface2);color:var(--muted);cursor:pointer;font-weight:600}
+.daybtn.on{background:#c79a1c;color:#2a2723;border-color:#c79a1c}
+.daybtn.on.weekday{background:#2f7fbf;color:#fff;border-color:#2f7fbf}
 details.card summary{cursor:pointer;font-family:Georgia,"Times New Roman",serif;font-size:16px;font-weight:600;list-style:none}
 details.card summary::-webkit-details-marker{display:none}
 details.card summary:after{content:" +";color:var(--accent)}
@@ -169,6 +171,7 @@ details.card[open] summary:after{content:" −"}
   .schoolhead h2{min-width:0}
   .schoolhead .row button[data-act="thisSW"]{display:none}
   .schoolfilters>button.btn,.schoolfilters>button.ghost{flex:0 1 auto;min-height:36px;padding:6px 10px;font-size:13px}
+  .daybtn{min-width:32px;height:30px;font-size:10.5px}
   .weekstrip{grid-template-columns:repeat(7,minmax(64px,1fr));min-width:470px;gap:4px}
   .wday{min-height:80px;padding:4px}
   .schoolweek{grid-template-columns:64px repeat(5,minmax(76px,1fr));min-width:470px;gap:3px}
@@ -403,7 +406,6 @@ var EFFORT={1:"Easy",2:"Medium",3:"Involved"};
 var MINUTES=[15,20,25,30,40,45,60,90];
 var DAYNAMES=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 function minutesOf(r){var m=+((r&&r.minutes)||0);if(m>=10)return m;var e=(r&&r.effort)||1;return e===1?30:(e===3?60:45)}
-function dayPreset(days){var d=(days||[]).slice().sort(function(a,b){return a-b}).join(",");return ["","4,5","4","5","6","4,5,6","0,1,2,3"].indexOf(d)>=0?d:"custom"}
 
 function softRender(){var a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&$("view").contains(a))return;render()}
 function tzName(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC"}catch(e){return "UTC"}}
@@ -556,22 +558,15 @@ function vRecipes(){
     var sp=specialsOf(r);
     var dayText=(r.days||[]).map(function(n){return DAYNAMES[n]}).join(", ");
     var dayCls=(r.days||[]).some(function(n){return n>=4})?" weekend":" weekday";
-    var preset=dayPreset(r.days);
-    var daySelect='<select class="daysel" data-recipe-days="'+r.id+'" title="Preferred days">'+
-      '<option value=""'+(preset===""?" selected":"")+'>Any day</option>'+
-      '<option value="4,5"'+(preset==="4,5"?" selected":"")+'>Fri+Sat</option>'+
-      '<option value="4"'+(preset==="4"?" selected":"")+'>Fri</option>'+
-      '<option value="5"'+(preset==="5"?" selected":"")+'>Sat</option>'+
-      '<option value="6"'+(preset==="6"?" selected":"")+'>Sun</option>'+
-      '<option value="4,5,6"'+(preset==="4,5,6"?" selected":"")+'>Fri–Sun</option>'+
-      '<option value="0,1,2,3"'+(preset==="0,1,2,3"?" selected":"")+'>Mon–Thu</option>'+
-      (preset==="custom"?'<option value="custom" selected>Custom…</option>':'')+
-      '</select>';
+    var dayBtns=DAYNAMES.map(function(n,i){
+      var on=(r.days||[]).indexOf(i)>=0;
+      return '<button class="daybtn'+(on?" on":"")+(i<4?" weekday":"")+'" data-recipe-day="'+r.id+'" data-day="'+i+'" title="'+n+'">'+n.slice(0,2)+'</button>';
+    }).join("");
     return '<li style="align-items:flex-start"><span class="t"><b>'+esc(r.name)+'</b> <span class="chip">'+EFFORT[r.effort||1]+' · '+minutesOf(r)+' min</span> <span class="chip">'+stars(r.rating||3)+'</span>'+
       (dayText?' <span class="chip daytag'+dayCls+'" title="Preferred days (about 70%)">'+esc(dayText)+'</span>':'')+
       (r.lastMade?' <span class="chip">made '+esc(parse(r.lastMade).toLocaleDateString(undefined,{day:"numeric",month:"short"}))+'</span>':'')+
       '<div style="color:var(--muted);font-size:12px;margin-top:2px">'+(sp.length?'Needs: '+esc(sp.join(", ")):'Only everyday ingredients')+(r.notes?' · '+esc(r.notes):'')+'</div></span>'+
-      '<span class="row" style="flex:0 0 auto">'+daySelect+'<button class="ghost" data-act="madeToday" data-id="'+r.id+'">Made today</button><button class="ghost" data-act="editRecipe" data-id="'+r.id+'">Edit</button><button class="x" data-act="delRecipe" data-id="'+r.id+'">×</button></span></li>'}).join("")+'</ul>';
+      '<span class="row" style="flex:0 0 auto">'+dayBtns+'<button class="ghost" data-act="madeToday" data-id="'+r.id+'">Made today</button><button class="ghost" data-act="editRecipe" data-id="'+r.id+'">Edit</button><button class="x" data-act="delRecipe" data-id="'+r.id+'">×</button></span></li>'}).join("")+'</ul>';
   h+='</div>';
   h+='<div class="card" style="margin-top:14px"><h2>New dinner ideas <button class="ghost" data-act="getIdeas">'+(ideasBusy?"Thinking…":"✨ Suggest 4 dinners")+'</button></h2>'+
     '<div class="row" style="margin:4px 0 6px;font-size:13px"><label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ideaQuick" checked> Quick weeknight (≤30 min)</label></div>'+
@@ -767,20 +762,25 @@ var actions={
 document.addEventListener("click",function(e){
   var t=e.target.closest("[data-tab]");
   if(t){tab=t.dataset.tab;render();window.scrollTo(0,0);return}
+  var rd=e.target.closest("[data-recipe-day]");
+  if(rd){
+    var rid=rd.dataset.recipeDay,dd=+rd.dataset.day;
+    state.recipes.forEach(function(r){
+      if(r.id!==rid)return;
+      var days=(r.days||[]).slice();
+      var idx=days.indexOf(dd);
+      if(idx>=0)days.splice(idx,1);else days.push(dd);
+      days.sort(function(a,b){return a-b});
+      r.days=days;
+    });
+    changed();
+    return;
+  }
   var a=e.target.closest("[data-act]");
   if(a&&actions[a.dataset.act]&&a.type!=="checkbox"){actions[a.dataset.act](a)}
 });
 document.addEventListener("change",function(e){
   var el=e.target;
-  if(el.dataset&&el.dataset.recipeDays){
-    var dv=el.value;
-    if(dv!=="custom"){
-      var ds=dv?dv.split(",").map(function(n){return +n}):[];
-      state.recipes.forEach(function(r){if(r.id===el.dataset.recipeDays)r.days=ds});
-      changed();
-    }
-    return;
-  }
   if(el.dataset&&el.dataset.staples){state.staples=el.value.split(/[,\n]/).map(function(x){return x.trim()}).filter(Boolean);scheduleSave();return}
   if(el.dataset&&el.dataset.act&&el.type==="checkbox"){actions[el.dataset.act](el);return}
   if(el.dataset&&el.dataset.meal){
