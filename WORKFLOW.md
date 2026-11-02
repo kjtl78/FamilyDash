@@ -94,6 +94,8 @@ The importer adds missing family members, homework/activities/events, week notes
 
 The Hub list is the shared list now: optional quantity, categories, **Shopping mode** (large checkboxes, no add form), **Share**, **Copy**, and **Add missing ingredients from this week** (pulls special ingredients from the dinner plan). It syncs through the same D1 state as everything else.
 
+The Shopping tab also has a **Dinner plan** card. Use its prev/next buttons to choose the week, then **Lock plan** after buying the groceries. A locked week disables the dinner inputs and hides Fill/Quick/Re-suggest until **Unlock plan**. The shopping list itself stays editable.
+
 Bring! is optional and **read-only** through its unofficial API. To mirror it, use a dedicated Bring! account, share the family list with it, and set `BRING_EMAIL` / `BRING_PASSWORD` secrets. Two-way Bring! sync is not implemented; use **Copy** to paste the Hub list into Bring! if needed.
 
 ## Calendar

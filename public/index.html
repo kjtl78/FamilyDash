@@ -220,7 +220,7 @@ var TABS=[["home","Today","🏠"],["cal","Calendar","📅"],["meals","Dinner","�
 var COLORS=["#d9622b","#2f7fbf","#3f8f5a","#b0489a","#c79a1c","#6b5bd2","#1f9aa3","#c0392b"];
 var CATS=["Produce","Dairy & eggs","Meat & fish","Pantry","Frozen","Household","Other"];
 var SLOTS=[["d","Dinner"]];
-var DEFAULT={members:[],events:[],meals:{},shopping:[],chores:[],notes:[],contacts:[],recipes:[],staples:["salt","pepper","oil","butter","onion","garlic","flour","sugar","rice","pasta","eggs","milk"],school:[],rejected:[],docs:[],weekNotes:[]};
+var DEFAULT={members:[],events:[],meals:{},shopping:[],chores:[],notes:[],contacts:[],recipes:[],staples:["salt","pepper","oil","butter","onion","garlic","flour","sugar","rice","pasta","eggs","milk"],school:[],rejected:[],docs:[],weekNotes:[],lockedWeeks:[]};
 
 var state=clone(DEFAULT), tab="home";
 var shopMode=false;
@@ -380,6 +380,7 @@ function weekHasSchool(week){
   var items=(state.school||[]).filter(function(x){return x.date>=s&&x.date<=e});
   return items.some(function(x){return x.type==="homework"})||items.length>=3;
 }
+function isWeekLocked(week){return (state.lockedWeeks||[]).indexOf(iso(week))>=0}
 function weekNoteHtml(n){
   return '<div class="wn"><span class="dot" style="background:'+colorOf(n.who)+'"></span><span><b>'+esc(nameOf(n.who))+':</b> '+esc(n.text)+'</span></div>';
 }
@@ -436,19 +437,31 @@ function vMeals(){
   var today=iso(new Date());
   var days=[];for(var i=0;i<7;i++)days.push(addDays(weekStart,i));
   var label=days[0].toLocaleDateString(undefined,{month:"short",day:"numeric"})+" – "+days[6].toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  var locked=isWeekLocked(weekStart);
   var h='<div class="card"><div class="cal-head"><button class="ghost" data-act="prevW">‹ Prev</button><h2 style="font-size:18px">Dinner · week of '+esc(label)+'</h2><span class="row"><button class="ghost" data-act="thisW">This week</button><button class="ghost" data-act="nextW">Next ›</button></span></div>';
+  if(locked)h+='<div class="wn" style="margin:6px 0;color:var(--muted)">🔒 Locked after shopping. <button class="ghost" data-act="unlockWeek">Unlock plan</button></div>';
   h+='<div class="week desk"><table><thead><tr><th></th>'+days.map(function(d){var k=iso(d);return '<th class="'+(k===today?"today":"")+'">'+esc(d.toLocaleDateString(undefined,{weekday:"short",day:"numeric"}))+'</th>'}).join("")+'</tr></thead><tbody>';
   SLOTS.forEach(function(s){
-    h+='<tr><td class="lbl">'+s[1]+'</td>'+days.map(function(d){var k=iso(d);var v=(state.meals[k]||{})[s[0]]||"";return '<td><input type="text" id="m-'+k+'-'+s[0]+'" data-meal="'+k+'|'+s[0]+'" value="'+esc(v)+'" placeholder="—"></td>'}).join("")+'</tr>';
+    h+='<tr><td class="lbl">'+s[1]+'</td>'+days.map(function(d){var k=iso(d);var v=(state.meals[k]||{})[s[0]]||"";return '<td><input type="text" id="m-'+k+'-'+s[0]+'" data-meal="'+k+'|'+s[0]+'" value="'+esc(v)+'" placeholder="—"'+(locked?' disabled':'')+'></td>'}).join("")+'</tr>';
   });
   h+='</tbody></table></div>';
-  h+='<div class="mob">'+days.map(function(d){var k=iso(d);var dm=state.meals[k]||{};return '<div class="mday'+(k===today?' today':'')+'"><h3>'+esc(d.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"}))+'</h3>'+SLOTS.map(function(s){return '<label><span>'+s[1]+'</span><input type="text" id="mm-'+k+'-'+s[0]+'" data-meal="'+k+'|'+s[0]+'" value="'+esc(dm[s[0]]||"")+'" placeholder="—"></label>'}).join("")+'</div>'}).join("")+'</div>';
-  h+='<div class="row" style="margin-top:12px"><button class="btn" data-act="suggestWeek" data-over="0">✨ Fill empty dinners</button><button class="ghost" data-act="suggestWeek" data-over="0" data-quick="1">⚡ Quick week (≤30 min)</button><button class="ghost" data-act="suggestWeek" data-over="1">Re-suggest all</button><button class="ghost" data-act="mealsToShop">Add special ingredients to Hub list</button></div></div>';
+  h+='<div class="mob">'+days.map(function(d){var k=iso(d);var dm=state.meals[k]||{};return '<div class="mday'+(k===today?' today':'')+'"><h3>'+esc(d.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"}))+'</h3>'+SLOTS.map(function(s){return '<label><span>'+s[1]+'</span><input type="text" id="mm-'+k+'-'+s[0]+'" data-meal="'+k+'|'+s[0]+'" value="'+esc(dm[s[0]]||"")+'" placeholder="—"'+(locked?' disabled':'')+'></label>'}).join("")+'</div>'}).join("")+'</div>';
+  h+='<div class="row" style="margin-top:12px">'+(locked?'':'<button class="btn" data-act="suggestWeek" data-over="0">✨ Fill empty dinners</button><button class="ghost" data-act="suggestWeek" data-over="0" data-quick="1">⚡ Quick week (≤30 min)</button><button class="ghost" data-act="suggestWeek" data-over="1">Re-suggest all</button>')+'<button class="ghost" data-act="mealsToShop">Add special ingredients to Hub list</button></div></div>';
   return h+vRecipes();
 }
 
+function vDinnerLock(){
+  var days=[];for(var i=0;i<7;i++)days.push(addDays(weekStart,i));
+  var label=days[0].toLocaleDateString(undefined,{month:"short",day:"numeric"})+" – "+days[6].toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  var locked=isWeekLocked(weekStart);
+  var h='<div class="card" style="margin-bottom:14px"><div class="cal-head"><button class="ghost" data-act="prevW">‹</button><h2 style="font-size:18px">Dinner plan · '+esc(label)+'</h2><span class="row"><button class="ghost" data-act="thisW">This week</button><button class="ghost" data-act="nextW">Next ›</button></span></div>';
+  h+='<div class="row" style="margin:6px 0">'+days.map(function(d){var m=(state.meals[iso(d)]||{}).d;return '<span class="chip">'+esc(d.toLocaleDateString(undefined,{weekday:"short"}))+': '+(m?esc(m):"–")+'</span>'}).join("")+'</div>';
+  if(locked)h+='<div class="wn" style="color:var(--muted)">Locked after shopping. Auto-suggestions and meal edits are off.</div><button class="ghost" data-act="unlockWeek">Unlock plan</button>';
+  else h+='<div class="wn" style="color:var(--muted)">Lock the plan after buying the groceries; this prevents re-suggesting or editing this week by accident.</div><button class="btn" data-act="lockWeek">Lock plan</button>';
+  return h+'</div>';
+}
 function vShop(){
-  var h=shopMode?'':bringCard();
+  var h=vDinnerLock()+(shopMode?'':bringCard());
   h+='<div class="card'+(shopMode?' shopmode':'')+'"><h2>Hub list <span class="row"><button class="ghost" data-act="shopMode">'+(shopMode?'Edit list':'Shopping mode')+'</button><button class="ghost" data-act="shareList">Share</button><button class="ghost" data-act="copyList">Copy</button>'+(shopMode?'':'<button class="ghost" data-act="clearDone">Clear checked</button>')+'</span></h2>';
   if(!shopMode)h+='<div class="row"><input type="text" id="shopText" placeholder="Add an item"><input type="text" id="shopQty" placeholder="Qty" style="max-width:90px;flex:0 0 90px"><select id="shopCat">'+CATS.map(function(c){return '<option>'+c+'</option>'}).join("")+'</select><button class="btn" data-act="addShop">Add</button></div>'+
     '<div class="row" style="margin-top:8px"><button class="ghost" data-act="mealsToShop">Add missing ingredients from this week</button></div>';
@@ -570,6 +583,7 @@ function ikey(i){return words(i).filter(function(w){return w.length>2}).sort().j
 function findRecipe(name){name=String(name||"").trim().toLowerCase();if(!name)return null;for(var i=0;i<state.recipes.length;i++)if(state.recipes[i].name.toLowerCase()===name)return state.recipes[i];return null}
 function stars(n){return "★★★★★".slice(0,n)}
 function suggestDinners(overwrite, quickOnly){
+  if(isWeekLocked(weekStart)){setStatus("This week is locked – unlock it in Shopping");return}
   var pool=quickOnly?state.recipes.filter(function(r){return minutesOf(r)<=30}):state.recipes;
   if(!pool.length){setStatus(quickOnly?"No quick recipes yet – add one or use the AI suggestions":(state.recipes.length?"No quick recipes":"Add some recipes first"));return}
   var days=[];for(var i=0;i<7;i++)days.push(addDays(weekStart,i));
@@ -618,6 +632,7 @@ function suggestDinners(overwrite, quickOnly){
   changed();setStatus(n?("Suggested "+n+" dinner"+(n>1?"s":"")+suffix):(quickOnly?"No free dinner slots or quick recipes left":"No free dinner slots or recipes left"));
 }
 function fillNextDinner(name){
+  if(isWeekLocked(weekStart))return null;
   for(var i=0;i<7;i++){
     var d=addDays(weekStart,i),k=iso(d),m=state.meals[k]||{};
     if(!(m.d||"").trim()){m.d=name;state.meals[k]=m;return d}
@@ -758,6 +773,8 @@ function val(id){var e=$(id);return e?e.value.trim():""}
 function del(arr,id){return state[arr].filter(function(x){return x.id!==id})}
 var actions={
   suggestWeek:function(el){suggestDinners(el.dataset.over==="1",el.dataset.quick==="1")},
+  lockWeek:function(){var k=iso(weekStart),a=state.lockedWeeks||[];if(a.indexOf(k)<0)a.push(k);state.lockedWeeks=a;changed()},
+  unlockWeek:function(){var k=iso(weekStart);state.lockedWeeks=(state.lockedWeeks||[]).filter(function(x){return x!==k});changed()},
   reloadGcal:function(){gcal.events=null;gcal.error="";render();loadGcal()},
   reloadBring:function(){bring.items=null;bring.error="";render();loadBring()},
   copyList:function(){
@@ -894,6 +911,7 @@ document.addEventListener("change",function(e){
   if(el.dataset&&el.dataset.act&&el.type==="checkbox"){actions[el.dataset.act](el);return}
   if(el.dataset&&el.dataset.meal){
     var p=el.dataset.meal.split("|");
+    if(isWeekLocked(mondayOf(parse(p[0]))))return;
     var day=state.meals[p[0]]||{};day[p[1]]=el.value.trim();
     if(!day.b&&!day.l&&!day.d)delete state.meals[p[0]];else state.meals[p[0]]=day;
     scheduleSave();
