@@ -1,6 +1,6 @@
 # Updating the site
 
-The whole loop is one command. The site is built and deployed by Cloudflare from GitHub, so a push to `main` is a release.
+The whole loop is one command. The source lives on GitHub; the site is deployed directly from this Mac to Cloudflare Pages.
 
 ```bash
 npm run ship -- "short description of the change"
@@ -10,8 +10,8 @@ That command:
 
 1. syntax-checks every JS file and the inline script in `public/index.html` — a broken file stops before anything is committed;
 2. commits everything on `main`;
-3. pushes to GitHub, which triggers the Cloudflare Pages build;
-4. waits for the production deployment for that commit, checks the live site returns `200`, and prints the URL.
+3. pushes to GitHub (history and backup);
+4. deploys `public/` + `functions/` directly to the **familien-ds** Pages project, then checks the live site and prints the URL.
 
 At the end it prints **✓ Live** plus the address to test. Nothing else is needed on the phone or the computer.
 
@@ -31,19 +31,19 @@ Wait for **✓ Live**, open the printed URL, try the changed feature. If somethi
 
 ## Where things run
 
-- **GitHub:** `kjtl78/FamilyDash`, branch `main`. Every commit on `main` is production.
-- **Cloudflare project:** `familyhub` → https://familyhub-84t.pages.dev (Git-connected, output folder `public`).
-- **Database:** D1 `familyhub` (`37b2c55b-aa07-4609-94ed-7b882c060473`), binding `DB`, table `kv`.
-- **Access:** the family site `familydash.pages.dev` is protected by the `lionfishky` Access team. `TEAM_DOMAIN` and `POLICY_AUD` are in `wrangler.toml`, so API requests from the protected site are verified.
+- **GitHub:** `kjtl78/FamilyDash`, branch `main`. Push is history/backup; the deploy is done locally by `npm run ship`.
+- **Cloudflare project:** `familien-ds` → https://familien-ds.pages.dev (direct upload, output folder `public`). The older `familyhub` project still exists as a legacy backup.
+- **Database:** D1 `familyhub` (`37b2c55b-aa07-4609-94ed-7b882c060473`), binding `DB`, table `kv` — shared by both projects.
+- **Access:** the family site is protected by the `cold-dust-02c3` Access team. `TEAM_DOMAIN` and `POLICY_AUD` are set on the project and in `wrangler.toml`. Add `familien-ds.pages.dev` to the Access application's domains so it is protected too.
 
 ## Secrets
 
 Never put a secret in the repository. Set it once, in Cloudflare:
 
 ```bash
-npx wrangler pages secret put GCAL_ICS_URL --project-name familyhub
-npx wrangler pages secret put BRING_EMAIL --project-name familyhub
-npx wrangler pages secret put BRING_PASSWORD --project-name familyhub
+npx wrangler pages secret put GCAL_ICS_URL --project-name familien-ds
+npx wrangler pages secret put BRING_EMAIL --project-name familien-ds
+npx wrangler pages secret put BRING_PASSWORD --project-name familien-ds
 ```
 
 Optional: `BRING_LIST_NAME`, `AI_MODEL`. Changes to secrets apply on the next deploy.

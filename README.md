@@ -3,6 +3,8 @@
 Static page (`public/`) + API (`functions/api/`) + D1 database, protected by Cloudflare Access.
 Cost: free tier. Read HANDOVER.md before changing anything.
 
+**Live site:** https://familien-ds.pages.dev (Cloudflare project `familien-ds`). The older `familyhub` project is a legacy backup.
+
 ## Updating it
 
 One command does check → commit → push → deploy → verify:

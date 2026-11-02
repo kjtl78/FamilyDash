@@ -3,8 +3,9 @@
 //
 // 1. checks every JS file (nothing is committed if a file is broken)
 // 2. commits all changes on main
-// 3. pushes to GitHub, which makes Cloudflare Pages build and deploy
-// 4. waits for that deployment and confirms the live site answers
+// 3. pushes to GitHub (keeps the history; the old familyhub project may also rebuild)
+// 4. deploys public/ + functions/ directly to the familien-ds Pages project
+// 5. confirms the live site answers
 //
 // The user only has to test the URL printed at the end.
 import { execFileSync, spawnSync } from "node:child_process";
@@ -13,10 +14,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const PROJECT = "familyhub";
-const LIVE_URL = "https://familyhub-84t.pages.dev";
-const TIMEOUT_MS = 5 * 60 * 1000;
-const POLL_MS = 8000;
+const PROJECT = "familien-ds";
+const LIVE_URL = "https://familien-ds.pages.dev";
 
 const message = process.argv.slice(2).join(" ").trim() || `Update ${new Date().toISOString().slice(0, 16).replace("T", " ")}`;
 
@@ -35,18 +34,15 @@ const wranglerBin = [
   join(process.env.HOME || "", ".local", "bin", "wrangler"),
 ].find((p) => p && existsSync(p)) || "wrangler";
 
-function deployments() {
-  const res = spawnSync(wranglerBin, ["pages", "deployment", "list", "--project-name", PROJECT, "--environment", "production", "--json"], {
-    cwd: root,
+function liveStatus() {
+  const res = spawnSync("curl", ["-sS", "-m", "10", "-o", "/dev/null", "-w", "%{http_code} %{redirect_url}", LIVE_URL], {
     encoding: "utf8",
   });
-  if (res.status !== 0) throw new Error(res.stderr || "Could not read deployments");
-  return JSON.parse(res.stdout);
+  const [code = "", redirect = ""] = (res.stdout || "").trim().split(" ");
+  return { code, redirect };
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function main() {
   console.log(`\n▸ Shipping: ${message}\n`);
@@ -59,59 +55,37 @@ async function main() {
   const staged = spawnSync("git", ["diff", "--cached", "--quiet"], { cwd: root });
   if (staged.status === 0) {
     console.log("     Nothing changed since the last deploy. Live site is already current.");
-    return;
+  } else {
+    if (!git("diff", "--cached", "--name-only").split("\n").includes("HANDOVER.md")) {
+      console.log("     Note: HANDOVER.md was not updated (the project rule asks for an entry per change).");
+    }
+    git("commit", "-m", message);
   }
-  if (!git("diff", "--cached", "--name-only").split("\n").includes("HANDOVER.md")) {
-    console.log("     Note: HANDOVER.md was not updated (the project rule asks for an entry per change).");
-  }
-  git("commit", "-m", message);
   const sha = git("rev-parse", "--short=7", "HEAD");
   console.log(`     ${sha} ${git("log", "-1", "--pretty=%s")}`);
 
-  console.log("\n3/4  Pushing to GitHub (this starts the Cloudflare build)…");
+  console.log("\n3/4  Pushing to GitHub…");
   git("push", "origin", "main");
 
-  console.log("\n4/4  Waiting for Cloudflare…");
-  const deadline = Date.now() + TIMEOUT_MS;
-  let found = null;
-  while (Date.now() < deadline) {
-    let list = [];
-    try {
-      list = deployments();
-    } catch (e) {
-      console.log(`     ${e.message.split("\n")[0]}`);
-    }
-    found = list.find((d) => d.Source === sha && d.Environment === "Production");
-    if (found) {
-      const status = String(found.Status || "");
-      if (/fail/i.test(status)) {
-        console.error(`\n✗ Deployment failed: ${found.Build || found.Deployment}`);
-        process.exit(1);
-      }
-      if (!/build|queue|pending|initial|progress/i.test(status)) break;
-      console.log(`     ${status || "building"}…`);
-    } else {
-      console.log("     Build queued…");
-    }
-    await sleep(POLL_MS);
+  console.log("\n4/4  Deploying to Cloudflare…");
+  run(wranglerBin, ["pages", "deploy", "public", "--project-name", PROJECT, "--branch", "main"], { stdio: "inherit" });
+
+  let status = { code: "", redirect: "" };
+  for (let i = 0; i < 8; i++) {
+    status = liveStatus();
+    const ok = status.code === "200" || (status.code === "302" && /cloudflareaccess\.com/.test(status.redirect));
+    if (ok) break;
+    await wait(2000);
   }
 
-  if (!found) {
-    console.error("\n✗ Push succeeded, but no production deployment for this commit appeared in time.");
-    console.error("  The site may be built from a different Cloudflare account. Check the GitHub commit is on main.");
-    process.exit(1);
-  }
-
-  const res = spawnSync("curl", ["-fsS", "-o", "/dev/null", "-w", "%{http_code} %{redirect_url}", LIVE_URL], { encoding: "utf8" });
-  const [code, redirect = ""] = (res.stdout || "").trim().split(" ");
-  const protectedByAccess = code === "302" && /cloudflareaccess\.com/.test(redirect);
-  if (code !== "200" && !protectedByAccess) {
-    console.error(`\n✗ Deployed, but ${LIVE_URL} answered ${code || "nothing"}.`);
+  const protectedByAccess = status.code === "302" && /cloudflareaccess\.com/.test(status.redirect);
+  if (status.code !== "200" && !protectedByAccess) {
+    console.error(`\n✗ Deployed, but ${LIVE_URL} answered ${status.code || "nothing"}.`);
     process.exit(1);
   }
 
   console.log(`\n✓ Live${protectedByAccess ? " (protected by Cloudflare Access)" : ""}. Test it at ${LIVE_URL}`);
-  console.log(`  Commit ${sha} · deployment ${found.Deployment}`);
+  console.log(`  Commit ${sha}`);
 }
 
 main().catch((e) => {

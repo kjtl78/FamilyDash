@@ -22,13 +22,13 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Work account (organisation: 4subsea). Org sharing settings may limit who can open the Claude-hosted link.
 
 ## Current state (update this section on every change)
-- Status: LIVE. GitHub `kjtl78/FamilyDash` (branch `main`, public) is Git-connected to Cloudflare Pages project `familyhub` → https://familyhub-84t.pages.dev. Latest verified deploy `8a55329` was live on 2026-11-02; every push to `main` rebuilds and deploys.
-- Family site: https://familyhub-84t.pages.dev is the chosen household site, protected by Cloudflare Access team `cold-dust-02c3` (application AUD `8ba3272a992d27f6fe1b07b5c29d109f607a6767d0f7d5156e9cf9de8f87d32c`). The login method is **Sign in with Cloudflare**. The older `familydash.pages.dev` site (Access team `lionfishky`) belongs to a different account and is no longer used.
-- Update loop: `npm run ship -- "message"` checks, commits, pushes, waits for the deployment and verifies the site (`WORKFLOW.md`).
+- Status: LIVE at https://familien-ds.pages.dev. Cloudflare Pages project **`familien-ds`** (created 2026-11-02) is deployed directly by `npm run ship`; GitHub `kjtl78/FamilyDash` branch `main` is the source and history. The older `familyhub` project → `familyhub-84t.pages.dev` remains as a legacy backup.
+- Access: team `cold-dust-02c3` (application AUD `8ba3272a992d27f6fe1b07b5c29d109f607a6767d0f7d5156e9cf9de8f87d32c`), login method **Sign in with Cloudflare**. The new hostname `familien-ds.pages.dev` still needs to be added to the Access application's domains; until then the new site shows the UI publicly but `/api/*` returns 401. The older `familydash.pages.dev` site (`lionfishky`) belongs to a different account and is unused.
+- Update loop: `npm run ship -- "message"` checks, commits, pushes to GitHub, deploys directly to `familien-ds` and verifies the site (`WORKFLOW.md`).
 - Cloudflare project layout: `public/index.html`, `functions/api/_middleware.js` (Access JWT check, fails closed), `functions/api/state.js` (GET/PUT, D1), `lib/ical.js`, `functions/api/calendar.js`, `functions/api/bring.js`, `functions/api/ideas.js`, `schema.sql`, `wrangler.toml`, `scripts/check.mjs`, `scripts/ship.mjs`, `README.md`, `WORKFLOW.md`.
 - Tabs: Today, Calendar, Dinner (dinner-only planner + recipes + AI ideas), Shopping (Bring! mirror + Hub list), School, More (chores, notes, contacts, backup).
 - Storage: `GET/PUT /api/state` against D1 table `kv` (row id `family`), client polls every 15 s and on focus; last writer wins.
-- Config: D1 binding `DB` and table `kv` exist; KV binding `SCHOOL` points at namespace `familyhub-school` (`99c2fdf65a324d1f8343aa581184f2cb`); `TEAM_DOMAIN` = `cold-dust-02c3.cloudflareaccess.com` and `POLICY_AUD` = `8ba3272a…f87d32c` are set on the Pages project; the `AI` binding exists. Important: Pages Git builds ignore `[vars]`, and KV bindings from `wrangler.toml` did not apply either, so these were set through the Pages API. `GCAL_ICS_URL` is set; `BRING_EMAIL` / `BRING_PASSWORD` are not, so Bring! returns 501.
+- Config: D1 binding `DB` and table `kv` exist; KV binding `SCHOOL` points at namespace `familyhub-school` (`99c2fdf65a324d1f8343aa581184f2cb`); `TEAM_DOMAIN` = `cold-dust-02c3.cloudflareaccess.com` and `POLICY_AUD` = `8ba3272a…f87d32c` are set on the Pages project; the `AI` binding exists. These were copied to the new `familien-ds` project through the Pages API; `GCAL_ICS_URL` was copied with `wrangler pages secret put`. Important: Pages Git builds ignore `[vars]`, and KV bindings from `wrangler.toml` did not apply either, so project config must be set through the API/dashboard. `BRING_EMAIL` / `BRING_PASSWORD` are not set, so Bring! returns 501.
 - Google Calendar: connected read-only via the `GCAL_ICS_URL` secret (calendar “Familien DDS”, 493 events). The real feed was parsed locally with `lib/ical.js`; the UI verification still needs a logged-in session.
 - Live data: family members Solvei (1. trinn) and Ellinor (4. trinn); the week 45 school plan is imported (14 items) plus 3 notes. Ellinor is in B class, so the week 46 gym reminder is on Monday 9.11.
 - Dinner planner: breakfast and lunch removed; recipes store `minutes`; “⚡ Quick week (≤30 min)” fills only quick recipes; AI ideas target ordinary Norwegian supermarket ingredients and short cooking times.
@@ -36,7 +36,7 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Source PDFs: stored in the private KV namespace `familyhub-school` (binding `SCHOOL`) and served at `/api/pdf/<key>` behind Cloudflare Access. Week 45 letters are attached to Solvei and Ellinor in the School tab.
 
 ## Architecture
-- One HTML file, no build step. Tabs: Today, Calendar, Meals, Shopping, Chores, Info (notes and contacts).
+- One HTML file, no build step. Tabs: Today, Calendar, Dinner, Shopping, School, More (chores, notes, contacts).
 - Responsive: bottom tab bar, 44px touch targets, 16px inputs and day-by-day meal cards at max-width 700px; multi-column layout above 900px. Light and dark mode via CSS variables.
 - **Persistence (Claude-hosted only):** Claude Artifact `db` capability. One document `family/state` containing `{state: "<JSON string>"}`. Subscribed once with `onSnapshot`; writes are debounced (450 ms) and serialised (one write at a time). If `db` is unavailable, falls back to `localStorage` key `familyhub-state` with a banner.
 - **Outside Claude the `db` capability does not exist.** The storage layer (functions `initStorage`, `flush`, `applyRemote` in the script) must be replaced with calls to a real backend.
@@ -77,6 +77,8 @@ Recommended: **Cloudflare Pages** + **Pages Functions** + **D1** (or KV) for sha
 - [x] Household site chosen: `familyhub-84t.pages.dev`. The old `familydash.pages.dev` account is no longer used.
 - [x] Access added to `familyhub-84t.pages.dev` (team `cold-dust-02c3`, app AUD `8ba3272a…f87d32c`); login method is Cloudflare.
 - [ ] Add the remaining family members to the Access policy (only `sagstad@gmail.com` is allowed so far).
+- [ ] Add `familien-ds.pages.dev` to the Access application's domains. Until then the new site is UI-public and `/api` returns 401.
+- [ ] Verify the new URL and login, then optionally delete the legacy `familyhub` project.
 - [ ] Consider making the GitHub repository private (currently public; keep secrets and family data out).
 - [x] Add `GCAL_ICS_URL` secret; the real “Familien DDS” feed (493 events) parses correctly with `lib/ical.js`.
 - [ ] Confirm the Calendar tab shows the next 7 days after logging in.
@@ -237,3 +239,10 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - AI ideas have **Add** (recipe book) and **Use this week** (add and fill the first empty dinner).
 - Added `scripts/import-recipes.mjs` for bulk-loading frequent dishes from a git-ignored `imports/recipes.json`.
 - Open: the family's frequent-dinner list is still needed; the live AI button needs a logged-in test.
+
+### 2026-11-02 · Entry 20 · Memorable URL: familien-ds.pages.dev
+- Cloudflare cannot rename a Pages project or change its `*.pages.dev` subdomain, so created a new project **`familien-ds`** (the exact subdomain was free). The old `familyhub` project stays as a legacy backup.
+- Set on the new project: D1 `DB`, KV `SCHOOL`, AI `AI`, `TEAM_DOMAIN`, `POLICY_AUD`; copied the `GCAL_ICS_URL` secret with `wrangler pages secret put`. Data and PDFs are shared because the bindings point at the same D1/KV resources.
+- Deployed directly with `wrangler pages deploy public --project-name familien-ds --branch main`. `https://familien-ds.pages.dev/` answers `200`; `/api/state` answers `401` (closed until Access is added).
+- Switched `scripts/ship.mjs` to deploy directly to `familien-ds` after the GitHub push; updated `package.json` scripts, `WORKFLOW.md`, `README.md` and the current-state notes.
+- Open: add `familien-ds.pages.dev` to the existing Access application's domains, then verify login and state saving on the new URL. The legacy `familyhub` project can be deleted after that.
