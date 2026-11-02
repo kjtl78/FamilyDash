@@ -23,7 +23,7 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 
 ## Current state (update this section on every change)
 - Status: LIVE at https://familien-ds.pages.dev. Cloudflare Pages project **`familien-ds`** (created 2026-11-02) is deployed directly by `npm run ship`; GitHub `kjtl78/FamilyDash` branch `main` is the source and history. The older `familyhub` project → `familyhub-84t.pages.dev` remains as a legacy backup.
-- Access: team `cold-dust-02c3` (application AUD `8ba3272a992d27f6fe1b07b5c29d109f607a6767d0f7d5156e9cf9de8f87d32c`), login method **Sign in with Cloudflare**. The new hostname `familien-ds.pages.dev` still needs to be added to the Access application's domains; until then the new site shows the UI publicly but `/api/*` returns 401. The older `familydash.pages.dev` site (`lionfishky`) belongs to a different account and is unused.
+- Access: team `cold-dust-02c3` (application AUD `8ba3272a992d27f6fe1b07b5c29d109f607a6767d0f7d5156e9cf9de8f87d32c`), login method **Sign in with Cloudflare**. It now covers `familien-ds.pages.dev` (verified: 302 to the Access login with the same AUD). The old `familyhub-84t.pages.dev` is no longer in the Access app; it answers 200 but its `/api` returns 401, so it is a legacy backup with no data access. The older `familydash.pages.dev` site (`lionfishky`) belongs to a different account and is unused.
 - Update loop: `npm run ship -- "message"` checks, commits, pushes to GitHub, deploys directly to `familien-ds` and verifies the site (`WORKFLOW.md`).
 - Cloudflare project layout: `public/index.html`, `functions/api/_middleware.js` (Access JWT check, fails closed), `functions/api/state.js` (GET/PUT, D1), `lib/ical.js`, `functions/api/calendar.js`, `functions/api/bring.js`, `functions/api/ideas.js`, `schema.sql`, `wrangler.toml`, `scripts/check.mjs`, `scripts/ship.mjs`, `README.md`, `WORKFLOW.md`.
 - Tabs: Today, Calendar, Dinner (dinner-only planner + recipes + AI ideas), Shopping (Bring! mirror + Hub list), School, More (chores, notes, contacts, backup).
@@ -78,8 +78,9 @@ Recommended: **Cloudflare Pages** + **Pages Functions** + **D1** (or KV) for sha
 - [x] Household site chosen: `familyhub-84t.pages.dev`. The old `familydash.pages.dev` account is no longer used.
 - [x] Access added to `familyhub-84t.pages.dev` (team `cold-dust-02c3`, app AUD `8ba3272a…f87d32c`); login method is Cloudflare.
 - [ ] Add the remaining family members to the Access policy (only `sagstad@gmail.com` is allowed so far).
-- [ ] Add `familien-ds.pages.dev` to the Access application's domains. Until then the new site is UI-public and `/api` returns 401.
-- [ ] Verify the new URL and login, then optionally delete the legacy `familyhub` project.
+- [x] Access covers `familien-ds.pages.dev` (verified 302 to the `cold-dust-02c3` login with the same AUD).
+- [ ] Sign in on the new URL and confirm state saving.
+- [ ] Optionally delete the legacy `familyhub` project (and old deployments).
 - [ ] Consider making the GitHub repository private (currently public; keep secrets and family data out).
 - [x] Add `GCAL_ICS_URL` secret; the real “Familien DDS” feed (493 events) parses correctly with `lib/ical.js`.
 - [ ] Confirm the Calendar tab shows the next 7 days after logging in.
@@ -253,3 +254,8 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - Calendar mobile list shows today plus days with events, with times and full titles. Ukeplan mobile list groups by child and lists only days with items, with homework checkboxes and delete buttons.
 - Mobile header fixes: 16px calendar/meal/school headings, compact buttons, School shows Prev / week / Next (the “This week” button is hidden on phones), the School filter buttons no longer take a full row, and the delete × is absolutely positioned so it no longer wraps.
 - Verified locally at 390 px with the real state and iCal feed; desktop unchanged.
+
+### 2026-11-02 · Entry 22 · Access covers familien-ds
+- The Access application now covers `familien-ds.pages.dev` (the old `familyhub-84t` hostname was replaced). Verified: the new site answers `302` to `cold-dust-02c3.cloudflareaccess.com` with the same application AUD, so `TEAM_DOMAIN` / `POLICY_AUD` stay unchanged.
+- The old `familyhub-84t.pages.dev` answers `200` for the static shell, but `/api/*` still requires an Access JWT and returns `401`; no family data is exposed. It remains a legacy backup.
+- Pending: sign in on the new URL and confirm saving; then the old project can be deleted.
