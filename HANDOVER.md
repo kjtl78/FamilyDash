@@ -22,10 +22,11 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Work account (organisation: 4subsea). Org sharing settings may limit who can open the Claude-hosted link.
 
 ## Current state (update this section on every change)
-- Status: Cloudflare project built (`/familyhub` zip), NOT yet deployed by the user. Claude-hosted prototype still exists as a fallback.
+- Status: Cloudflare site is DEPLOYED (user: GitHub repo `kjtl78/FamilyDash`, Cloudflare Pages Git integration). Update 2 (Entry 8) built and tested only with fake data; not yet deployed or configured by the user.
 - Artifact URL: https://claude.ai/artifact/2peaZ8Y5AuxC7wfqsZNvr5
 - Source file: `family-dashboard.html` (single self-contained file, vanilla JS, no dependencies).
 - Cloudflare project layout: `public/index.html`, `functions/api/_middleware.js` (Access JWT check, fails closed), `functions/api/state.js` (GET/PUT, D1), `schema.sql`, `wrangler.toml` (database_id placeholder), `README.md` (setup steps).
+- Update 2 adds: `lib/ical.js` (iCal reader), `functions/api/calendar.js`, `functions/api/bring.js`, `functions/api/ideas.js`; tabs are now Today, Calendar, Meals (planner + recipes + AI ideas), Shopping (Bring! mirror + Hub list), School, More (chores, notes, contacts, backup).
 - Storage outside Claude: `GET/PUT /api/state` against D1 table `kv` (row id `family`), client polls every 15 s and on focus; last writer wins.
 - Google Calendar connector: suggested to the user, connection not confirmed.
 
@@ -67,8 +68,12 @@ Recommended: **Cloudflare Pages** + **Pages Functions** + **D1** (or KV) for sha
 - [ ] User to provide the school/homework PDF (or its URL) and the children's names.
 - [x] Build deploy-ready Cloudflare project (Entry 6).
 - [ ] User to deploy following README and confirm the front page works on phone and desktop.
-- [ ] Add "copy shopping list" button for Bring!.
-- [ ] Add school PDF link/storage and homework import.
+- [x] Copy Hub list button added (Entry 8).
+- [x] School calendar + JSON import added (Entry 8). PDFs are read by Claude in chat, not by the app.
+- [ ] User to deploy Update 2: upload files, add `[ai]` to wrangler.toml, add secrets, redeploy, verify /api/calendar and /api/bring.
+- [ ] User to send first school PDF + children's first names (add them as family members first).
+- [ ] Verify the unofficial Bring! login works from Cloudflare (untested).
+- [ ] Verify Workers AI model name `@cf/meta/llama-3.3-70b-instruct-fp8-fast` exists on the account (configurable via AI_MODEL).
 - [ ] Optional: birthdays, recurring chores, pinned weekly menu, shopping list download.
 
 ---
@@ -114,3 +119,21 @@ Recommended: **Cloudflare Pages** + **Pages Functions** + **D1** (or KV) for sha
 - Added `<meta name="robots" content="noindex,nofollow">`.
 - Syntax-checked the JS with node only. NOT run against real Cloudflare or tested in a browser; the Access JWT verification in particular is untested.
 - Known gaps: no export/backup button yet, no Google Calendar, no Bring! copy button, no school PDF yet. Whole-state last-writer-wins can overwrite simultaneous edits.
+
+### 2026-11-02 · Entry 7 · Files uploaded to GitHub
+- User uploaded the project to a private GitHub repository (`kjtl78/FamilyDash`); no Node.js available without admin rights, so deployment is via GitHub + Cloudflare dashboard, not wrangler.
+- First deploy failed ("Output directory public not found") because folders were not at the repo root; user fixed it and the site is published.
+
+### 2026-11-02 · Entry 8 · Update 2: calendar, dinner planner, school, Bring! mirror
+User decisions: Bring! must flow INTO the Hub (read-only mirror); school PDFs are read by Claude in chat and imported as JSON; new-meal ideas come from a built-in Cloudflare AI button (no web access).
+Added:
+- `lib/ical.js` + `functions/api/calendar.js`: reads private Google Calendar iCal feed (secret `GCAL_ICS_URL`), returns next 7 days in the viewer's time zone. Supports RRULE (DAILY/WEEKLY/MONTHLY/YEARLY, INTERVAL, COUNT, UNTIL, BYDAY incl. ordinals, BYMONTHDAY), EXDATE, RECURRENCE-ID overrides, all-day and TZID/UTC events. Not supported: RDATE, BYSETPOS. Tested on a sample .ics only, not on the real Google feed.
+- `functions/api/bring.js`: read-only mirror via Bring!'s UNOFFICIAL API (POST /rest/v2/bringauth; GET bringusers/{uuid}/lists; GET bringlists/{listUuid}); secrets `BRING_EMAIL`, `BRING_PASSWORD`, optional `BRING_LIST_NAME`; API key is Bring!'s public web-client key (override with `BRING_API_KEY`). Untested against the real service. Item names are Bring! catalog keys or user text, not localised.
+- `functions/api/ideas.js`: Workers AI (binding `AI`, default model `@cf/meta/llama-3.3-70b-instruct-fp8-fast`, override `AI_MODEL`) returns 4 JSON dish ideas given liked recipes, all recipes, staples and rejected names. No web access.
+- Front end: recipe book (name, effort 1-3, rating 1-5, ingredients one per line, notes, last made), editable "everyday ingredients" list, dinner suggester (scores: rating, days since last made, effort with weekday penalty, number of non-everyday ingredients, overlap of ingredients with dishes already picked, random jitter; "Fill empty dinners" and "Re-suggest all"), "Add special ingredients to Hub list", AI idea cards with Add / Not for us, School tab (week view per child, homework tick boxes, activities, manual add), JSON import, Google Calendar and Bring! cards, Hub list copy button, backup download, More tab replacing Chores and Info tabs.
+- Tested with a fake DOM and fake API responses in node (all checks passed); NOT tested in a real browser, on a phone, or against Google, Bring! or Workers AI.
+- `wrangler.toml` needs `[ai]\nbinding = "AI"` appended by the user; the copy in this folder still has the placeholder database_id, never overwrite the user's version.
+
+School import format (for any model asked to convert a school PDF): output ONLY a JSON array, dates ISO, child names exactly as in the Hub, type one of homework|activity|event:
+`[{"child":"Emma","date":"2026-11-03","type":"homework","title":"Maths p.45","subject":"Maths"}]`
+Ask the user for the children's first names if not known; skip anything ambiguous and list it separately.

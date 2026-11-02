@@ -133,11 +133,11 @@ nav button{display:flex;align-items:center;gap:6px}
 <script>
 (function(){
 "use strict";
-var TABS=[["home","Today","🏠"],["cal","Calendar","📅"],["meals","Meals","🍽️"],["shop","Shopping","🛒"],["chores","Chores","✅"],["info","Info","📝"]];
+var TABS=[["home","Today","🏠"],["cal","Calendar","📅"],["meals","Meals","🍽️"],["shop","Shopping","🛒"],["school","School","🎒"],["more","More","☰"]];
 var COLORS=["#d9622b","#2f7fbf","#3f8f5a","#b0489a","#c79a1c","#6b5bd2","#1f9aa3","#c0392b"];
 var CATS=["Produce","Dairy & eggs","Meat & fish","Pantry","Frozen","Household","Other"];
 var SLOTS=[["b","Breakfast"],["l","Lunch"],["d","Dinner"]];
-var DEFAULT={members:[],events:[],meals:{},shopping:[],chores:[],notes:[],contacts:[]};
+var DEFAULT={members:[],events:[],meals:{},shopping:[],chores:[],notes:[],contacts:[],recipes:[],staples:["salt","pepper","oil","butter","onion","garlic","flour","sugar","rice","pasta","eggs","milk"],school:[],rejected:[]};
 
 var state=clone(DEFAULT), tab="home";
 var now=new Date();
@@ -230,7 +230,7 @@ function render(){
   renderNav();
   var active=document.activeElement;
   var v=$("view");
-  var fn={home:vHome,cal:vCal,meals:vMeals,shop:vShop,chores:vChores,info:vInfo}[tab];
+  var fn={home:vHome,cal:vCal,meals:vMeals,shop:vShop,school:vSchool,more:vMore}[tab]||vHome;
   v.innerHTML=fn();
   if(active&&active.id&&$(active.id)){try{$(active.id).focus()}catch(e){}}
 }
@@ -247,7 +247,7 @@ function vHome(){
   var evs=eventsOn(today);
   var upcoming=state.events.filter(function(e){return e.date>today&&e.date<=iso(addDays(new Date(),7))}).sort(function(a,b){return (a.date+(a.time||"")).localeCompare(b.date+(b.time||""))}).slice(0,6);
   var meal=state.meals[today]||{};
-  var open=state.shopping.filter(function(s){return !s.done});
+  var open=state.shopping.filter(function(s){return !s.done}).map(function(s){return {text:s.text}}).concat((bring.items||[]).map(function(i){return {text:i.name}}));
   var chores=state.chores.filter(function(c){return !c.done});
   var h='<div class="grid">';
   h+='<div class="card"><h2>Today <a data-tab="cal">Calendar →</a></h2><div style="color:var(--muted);margin-bottom:6px">'+esc(fmtDate(today))+'</div>'+
@@ -257,8 +257,9 @@ function vHome(){
   h+='<div class="card"><h2>Today’s meals <a data-tab="meals">Planner →</a></h2><ul class="list">'+SLOTS.map(function(s){return '<li><span class="chip" style="width:84px;text-align:center">'+s[1]+'</span><span class="t">'+(meal[s[0]]?esc(meal[s[0]]):'<span class="empty">not planned</span>')+'</span></li>'}).join("")+'</ul></div>';
   h+='<div class="card"><h2>Shopping <a data-tab="shop">List →</a></h2>'+
      (open.length?'<div><b>'+open.length+'</b> item'+(open.length>1?"s":"")+' to buy</div><div style="color:var(--muted);margin-top:4px">'+esc(open.slice(0,5).map(function(s){return s.text}).join(", "))+(open.length>5?"…":"")+'</div>':'<div class="empty">List is empty.</div>')+'</div>';
-  h+='<div class="card"><h2>Chores <a data-tab="chores">All →</a></h2>'+
+  h+='<div class="card"><h2>Chores <a data-tab="more">All →</a></h2>'+
      (chores.length?'<ul class="list">'+chores.slice(0,5).map(function(c){return '<li><input type="checkbox" data-act="toggleChore" data-id="'+c.id+'"><span class="t">'+esc(c.text)+'</span><span class="chip">'+esc(nameOf(c.who))+'</span></li>'}).join("")+'</ul>':'<div class="empty">All done. 🎉</div>')+'</div>';
+  h+=gcalCard(true);
   h+='<div class="card"><h2>Family</h2><div class="members">'+state.members.map(function(m){return '<span class="m"><span class="dot" style="background:'+m.color+'"></span>'+esc(m.name)+'<button class="x" data-act="delMember" data-id="'+m.id+'" title="Remove">×</button></span>'}).join("")+'</div>'+
      (state.members.length?'':'<div class="empty">Add the people in your household to assign events and chores.</div>')+
      '<div class="row" style="margin-top:10px"><input type="text" id="newMember" placeholder="Add a family member"><button class="btn" data-act="addMember">Add</button></div></div>';
@@ -270,7 +271,7 @@ function vCal(){
   var start=mondayOf(first);
   var title=first.toLocaleDateString(undefined,{month:"long",year:"numeric"});
   var today=iso(new Date());
-  var h='<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))"><div class="card calcard" style="grid-column:span 2;min-width:0">';
+  var h=gcalCard(false)+'<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))"><div class="card calcard" style="grid-column:span 2;min-width:0">';
   h+='<div class="cal-head"><button class="ghost" data-act="prevM">‹</button><h2 style="font-size:18px">'+esc(title)+'</h2><span class="row"><button class="ghost" data-act="todayM">Today</button><button class="ghost" data-act="nextM">›</button></span></div>';
   h+='<div class="cal">'+["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(function(d){return '<div class="dow">'+d+'</div>'}).join("");
   for(var i=0;i<42;i++){
@@ -298,12 +299,12 @@ function vMeals(){
   });
   h+='</tbody></table></div>';
   h+='<div class="mob">'+days.map(function(d){var k=iso(d);var dm=state.meals[k]||{};return '<div class="mday'+(k===today?' today':'')+'"><h3>'+esc(d.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"}))+'</h3>'+SLOTS.map(function(s){return '<label><span>'+s[1]+'</span><input type="text" id="mm-'+k+'-'+s[0]+'" data-meal="'+k+'|'+s[0]+'" value="'+esc(dm[s[0]]||"")+'" placeholder="—"></label>'}).join("")+'</div>'}).join("")+'</div>';
-  h+='<div class="row" style="margin-top:12px"><button class="ghost" data-act="mealsToShop">Add this week’s dinners to shopping list</button></div></div>';
-  return h;
+  h+='<div class="row" style="margin-top:12px"><button class="btn" data-act="suggestWeek" data-over="0">✨ Fill empty dinners</button><button class="ghost" data-act="suggestWeek" data-over="1">Re-suggest all dinners</button><button class="ghost" data-act="mealsToShop">Add special ingredients to Hub list</button></div></div>';
+  return h+vRecipes();
 }
 
 function vShop(){
-  var h='<div class="card"><h2>Shopping list <span class="row"><button class="ghost" data-act="clearDone">Clear checked</button></span></h2>';
+  var h=bringCard()+'<div class="card"><h2>Hub list <span class="row"><button class="ghost" data-act="copyList">Copy</button><button class="ghost" data-act="clearDone">Clear checked</button></span></h2>';
   h+='<div class="row"><input type="text" id="shopText" placeholder="Add an item"><select id="shopCat">'+CATS.map(function(c){return '<option>'+c+'</option>'}).join("")+'</select><button class="btn" data-act="addShop">Add</button></div>';
   if(!state.shopping.length)h+='<div class="empty" style="margin-top:10px">Nothing on the list yet.</div>';
   CATS.forEach(function(c){
@@ -330,10 +331,239 @@ function vInfo(){
   return h+'</div>';
 }
 
+
+/* ---------- external data: Google Calendar + Bring! ---------- */
+var gcal={events:null,error:"",at:null}, bring={items:null,name:"",error:"",at:null};
+var ideas=[], ideasBusy=false, ideasErr="";
+var editRecipe=null, schoolWeek=mondayOf(new Date()), schoolFilter="", importMsg="";
+var EFFORT={1:"Easy",2:"Medium",3:"Involved"};
+
+function softRender(){var a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&$("view").contains(a))return;render()}
+function tzName(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC"}catch(e){return "UTC"}}
+function getJson(url,opt){
+  return fetch(url,opt).then(function(r){return r.json().catch(function(){return {error:"Bad response"}}).then(function(d){return {ok:r.ok,d:d}})});
+}
+function loadGcal(){
+  getJson("/api/calendar?tz="+encodeURIComponent(tzName())+"&start="+iso(new Date()),{headers:{Accept:"application/json"}})
+   .then(function(x){
+     if(x.ok&&x.d.events){gcal={events:x.d.events,error:"",at:new Date()}}
+     else gcal.error=(x.d&&x.d.error)||"Could not load the calendar.";
+     softRender();
+   }).catch(function(){gcal.error="Could not load the calendar.";softRender()});
+}
+function loadBring(){
+  getJson("/api/bring",{headers:{Accept:"application/json"}})
+   .then(function(x){
+     if(x.ok&&x.d.items){bring={items:x.d.items,name:(x.d.list&&x.d.list.name)||"",error:"",at:new Date()}}
+     else bring.error=(x.d&&x.d.error)||"Could not load Bring!.";
+     softRender();
+   }).catch(function(){bring.error="Could not load Bring!.";softRender()});
+}
+function hhmm(iso8601){return new Date(iso8601).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}
+function gcalCard(inGrid){
+  var h='<div class="card"'+(inGrid?'':' style="margin-bottom:14px"')+'><h2>Google Calendar · 7 days <a data-act="reloadGcal">Refresh</a></h2>';
+  if(gcal.events===null)return h+'<div class="empty">'+(gcal.error?esc(gcal.error):"Loading…")+'</div></div>';
+  var by={};
+  gcal.events.forEach(function(e){var k=e.allDay?e.start:iso(new Date(e.start));(by[k]=by[k]||[]).push(e)});
+  var any=false,body="";
+  for(var i=0;i<7;i++){
+    var d=addDays(new Date(),i),k=iso(d),list=by[k];
+    if(!list)continue;any=true;
+    body+='<div class="cat">'+esc(i===0?"Today":d.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"}))+'</div><ul class="list">'+
+      list.map(function(e){return '<li><span class="t"><b>'+(e.allDay?"All day":esc(hhmm(e.start))+"–"+esc(hhmm(e.end)))+'</b> '+esc(e.title)+(e.location?' <span class="chip">'+esc(e.location)+'</span>':'')+'</span></li>'}).join("")+'</ul>';
+  }
+  h+=any?body:'<div class="empty">Nothing in the next 7 days.</div>';
+  if(gcal.error)h+='<div style="color:var(--danger);font-size:12px">'+esc(gcal.error)+'</div>';
+  return h+'</div>';
+}
+function bringCard(){
+  var h='<div class="card" style="margin-bottom:14px"><h2>From Bring!'+(bring.name?' · '+esc(bring.name):'')+' <a data-act="reloadBring">Refresh</a></h2>';
+  if(bring.items===null)return h+'<div class="empty">'+(bring.error?esc(bring.error):"Loading…")+'</div></div>';
+  h+=bring.items.length?'<ul class="list">'+bring.items.map(function(it){return '<li><span class="t">'+esc(it.name)+(it.spec?' <span class="chip">'+esc(it.spec)+'</span>':'')+'</span></li>'}).join("")+'</ul>':'<div class="empty">The Bring! list is empty.</div>';
+  return h+'<div style="color:var(--muted);font-size:12px;margin-top:6px">Read-only copy. Add and tick items in the Bring! app.'+(bring.at?' Updated '+esc(bring.at.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})):'')+(bring.error?' · '+esc(bring.error):'')+'</div></div>';
+}
+
+/* ---------- recipes and dinner suggestions ---------- */
+function words(x){return String(x).toLowerCase().split(/[^a-zà-ÿ]+/).filter(Boolean).map(function(w){return w.replace(/s$/,"")})}
+function isStaple(ing){var iw=words(ing);return (state.staples||[]).some(function(st){var sw=words(st);return sw.length&&sw.every(function(w){return iw.indexOf(w)>=0})})}
+function specialsOf(r){return (r.ingredients||[]).filter(function(i){return !isStaple(i)})}
+function ikey(i){return words(i).filter(function(w){return w.length>2}).sort().join(" ")}
+function findRecipe(name){name=String(name||"").trim().toLowerCase();if(!name)return null;for(var i=0;i<state.recipes.length;i++)if(state.recipes[i].name.toLowerCase()===name)return state.recipes[i];return null}
+function stars(n){return "★★★★★".slice(0,n)}
+function suggestDinners(overwrite){
+  if(!state.recipes.length){setStatus("Add some recipes first");return}
+  var days=[];for(var i=0;i<7;i++)days.push(addDays(weekStart,i));
+  var used={},picked={},targets=[],n=0;
+  days.forEach(function(d){
+    var cur=((state.meals[iso(d)]||{}).d||"").trim();
+    if(cur&&!overwrite){var r=findRecipe(cur);if(r){used[r.id]=1;specialsOf(r).forEach(function(x){picked[ikey(x)]=1})}}
+    else targets.push(d);
+  });
+  targets.forEach(function(d){
+    var weekday=((d.getDay()+6)%7)<4,best=null,bs=-1e9;
+    state.recipes.forEach(function(r){
+      if(used[r.id])return;
+      var sc=(r.rating||3)*2;
+      var since=r.lastMade?Math.round((d-parse(r.lastMade))/864e5):30;if(since<0)since=30;
+      sc+=Math.min(since,30)/6;if(since<7)sc-=4;
+      sc-=((r.effort||2)-1)*(weekday?1.5:0.5);
+      var sp=specialsOf(r);sc-=sp.length*1.2;
+      var shared=sp.filter(function(x){return picked[ikey(x)]}).length;sc+=Math.min(shared,3)*1.5;
+      sc+=Math.random()*1.5;
+      if(sc>bs){bs=sc;best=r}
+    });
+    if(!best)return;
+    used[best.id]=1;specialsOf(best).forEach(function(x){picked[ikey(x)]=1});
+    var k=iso(d),m=state.meals[k]||{};m.d=best.name;state.meals[k]=m;n++;
+  });
+  changed();setStatus(n?"Suggested "+n+" dinner"+(n>1?"s":""):"No free dinner slots or recipes left");
+}
+function addSpecials(){
+  var have={};
+  state.shopping.forEach(function(s){have[ikey(s.text)]=1});
+  (bring.items||[]).forEach(function(b){have[ikey(b.name)]=1});
+  var added=0;
+  for(var i=0;i<7;i++){
+    var r=findRecipe((state.meals[iso(addDays(weekStart,i))]||{}).d);
+    if(!r)continue;
+    specialsOf(r).forEach(function(x){var k=ikey(x);if(!k||have[k])return;have[k]=1;state.shopping.push({id:uid(),text:x,cat:"Other",done:false});added++});
+  }
+  changed();setStatus(added?"Added "+added+" ingredient"+(added>1?"s":"")+" to the Hub list":"Nothing new to add");
+}
+function vRecipes(){
+  var er=null;if(editRecipe)er=state.recipes.filter(function(r){return r.id===editRecipe})[0]||null;
+  var h='<div class="grid" style="margin-top:14px">';
+  h+='<div class="card"><h2>'+(er?"Edit recipe":"Add a recipe")+'</h2>'+
+    '<div class="row"><input type="text" id="rName" placeholder="Dish name" value="'+esc(er?er.name:"")+'"></div>'+
+    '<div class="row" style="margin-top:8px"><select id="rEffort">'+[1,2,3].map(function(n){return '<option value="'+n+'"'+((er?er.effort:1)===n?" selected":"")+'>'+EFFORT[n]+(n===1?" (about 30 min)":"")+'</option>'}).join("")+'</select>'+
+    '<select id="rRating">'+[5,4,3,2,1].map(function(n){return '<option value="'+n+'"'+((er?er.rating:3)===n?" selected":"")+'>'+stars(n)+'</option>'}).join("")+'</select></div>'+
+    '<textarea id="rIngr" rows="6" style="width:100%;margin-top:8px" placeholder="Ingredients, one per line">'+esc(er?er.ingredients.join("\n"):"")+'</textarea>'+
+    '<input type="text" id="rNotes" style="width:100%;margin-top:8px" placeholder="Notes or link (optional)" value="'+esc(er&&er.notes?er.notes:"")+'">'+
+    '<div class="row" style="margin-top:8px"><button class="btn" data-act="saveRecipe">'+(er?"Save":"Add recipe")+'</button>'+(er?'<button class="ghost" data-act="cancelRecipe">Cancel</button>':"")+'</div></div>';
+  h+='<div class="card"><h2>Everyday ingredients</h2><div style="color:var(--muted);font-size:13px;margin-bottom:6px">Things you always have at home. Recipes that need many <i>other</i> ingredients get suggested less. Separate with commas.</div>'+
+    '<textarea id="stapleText" data-staples="1" rows="5" style="width:100%">'+esc((state.staples||[]).join(", "))+'</textarea></div></div>';
+  h+='<div class="card" style="margin-top:14px"><h2>Recipe book ('+state.recipes.length+')</h2>';
+  if(!state.recipes.length)h+='<div class="empty">No recipes yet. Add the dishes you cook often; the planner suggests from these.</div>';
+  else h+='<ul class="list">'+state.recipes.slice().sort(function(a,b){return a.name.localeCompare(b.name)}).map(function(r){
+    var sp=specialsOf(r);
+    return '<li style="align-items:flex-start"><span class="t"><b>'+esc(r.name)+'</b> <span class="chip">'+EFFORT[r.effort||2]+'</span> <span class="chip">'+stars(r.rating||3)+'</span>'+
+      (r.lastMade?' <span class="chip">made '+esc(parse(r.lastMade).toLocaleDateString(undefined,{day:"numeric",month:"short"}))+'</span>':'')+
+      '<div style="color:var(--muted);font-size:12px;margin-top:2px">'+(sp.length?'Needs: '+esc(sp.join(", ")):'Only everyday ingredients')+(r.notes?' · '+esc(r.notes):'')+'</div></span>'+
+      '<span class="row" style="flex:0 0 auto"><button class="ghost" data-act="madeToday" data-id="'+r.id+'">Made today</button><button class="ghost" data-act="editRecipe" data-id="'+r.id+'">Edit</button><button class="x" data-act="delRecipe" data-id="'+r.id+'">×</button></span></li>'}).join("")+'</ul>';
+  h+='</div>';
+  h+='<div class="card" style="margin-top:14px"><h2>New dish ideas <button class="ghost" data-act="getIdeas">'+(ideasBusy?"Thinking…":"✨ Suggest new dishes")+'</button></h2>'+
+    '<div style="color:var(--muted);font-size:13px">Based on the dishes you like and your everyday ingredients. Written by an AI model without web access, so check each recipe before you cook it.</div>';
+  if(ideasErr)h+='<div style="color:var(--danger);margin-top:8px">'+esc(ideasErr)+'</div>';
+  if(ideas.length)h+='<ul class="list" style="margin-top:8px">'+ideas.map(function(x,i){
+    return '<li style="align-items:flex-start"><span class="t"><b>'+esc(x.name)+'</b> <span class="chip">'+EFFORT[x.effort]+'</span><div style="color:var(--muted);font-size:13px">'+esc(x.why)+'</div><div style="font-size:12px;margin-top:2px">'+esc(x.ingredients.join(", "))+'</div></span>'+
+      '<span class="row" style="flex:0 0 auto"><button class="btn" data-act="addIdea" data-i="'+i+'">Add</button><button class="ghost" data-act="rejectIdea" data-i="'+i+'">Not for us</button></span></li>'}).join("")+'</ul>';
+  return h+'</div>';
+}
+
+/* ---------- school ---------- */
+function vSchool(){
+  var days=[];for(var i=0;i<7;i++)days.push(addDays(schoolWeek,i));
+  var label=days[0].toLocaleDateString(undefined,{month:"short",day:"numeric"})+" – "+days[6].toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  var today=iso(new Date());
+  var h='<div class="card"><div class="cal-head"><button class="ghost" data-act="prevSW">‹ Prev</button><h2 style="font-size:18px">School week '+esc(label)+'</h2><span class="row"><button class="ghost" data-act="thisSW">This week</button><button class="ghost" data-act="nextSW">Next ›</button></span></div>';
+  h+='<div class="row" style="margin-bottom:6px"><button class="'+(schoolFilter===""?"btn":"ghost")+'" data-act="schoolFilter" data-id="">Everyone</button>'+state.members.map(function(m){return '<button class="'+(schoolFilter===m.id?"btn":"ghost")+'" data-act="schoolFilter" data-id="'+m.id+'">'+esc(m.name)+'</button>'}).join("")+'</div>';
+  if(!state.members.length)h+='<div class="empty">Add your children as family members on the Today tab first.</div>';
+  days.forEach(function(d){
+    var k=iso(d);
+    var items=state.school.filter(function(x){return x.date===k&&(!schoolFilter||x.who===schoolFilter)}).sort(function(a,b){return a.type.localeCompare(b.type)||a.title.localeCompare(b.title)});
+    h+='<div class="cat" style="'+(k===today?"color:var(--accent)":"")+'">'+esc(d.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"}))+'</div>';
+    h+=items.length?'<ul class="list">'+items.map(function(x){
+      var icon=x.type==="homework"?"📚":x.type==="activity"?"⚽":"📌";
+      return '<li class="'+(x.done?"done":"")+'">'+(x.type==="homework"?'<input type="checkbox" data-act="toggleSchool" data-id="'+x.id+'"'+(x.done?" checked":"")+'>':'<span style="width:24px;text-align:center">'+icon+'</span>')+
+        '<span class="dot" style="background:'+colorOf(x.who)+'"></span><span class="t">'+esc(x.title)+(x.subject?' <span class="chip">'+esc(x.subject)+'</span>':'')+' <span class="chip">'+esc(nameOf(x.who))+'</span></span><button class="x" data-act="delSchool" data-id="'+x.id+'">×</button></li>'}).join("")+'</ul>':'<div class="empty">—</div>';
+  });
+  h+='</div>';
+  h+='<div class="grid" style="margin-top:14px"><div class="card"><h2>Add homework or activity</h2><div class="row"><select id="schoolWho">'+state.members.map(function(m){return '<option value="'+m.id+'">'+esc(m.name)+'</option>'}).join("")+'</select><input type="date" id="schoolDate" value="'+esc(iso(new Date()))+'"><select id="schoolType"><option value="homework">Homework</option><option value="activity">Activity</option><option value="event">School event</option></select></div>'+
+    '<div class="row" style="margin-top:8px"><input type="text" id="schoolTitle" placeholder="e.g. Maths p. 45, swimming kit"><button class="btn" data-act="addSchool">Add</button></div></div>';
+  h+='<div class="card"><h2>Import from the school PDF</h2><div style="color:var(--muted);font-size:13px;margin-bottom:6px">Send the PDF to Claude in chat and ask for a Family Hub import. Paste the result here. Names must match your family members.</div>'+
+    '<textarea id="schoolImport" rows="5" style="width:100%" placeholder=\'[{"child":"Emma","date":"2026-11-03","type":"homework","title":"Maths p.45","subject":"Maths"}]\'></textarea><div class="row" style="margin-top:8px"><button class="btn" data-act="importSchool">Import</button></div>'+
+    (importMsg?'<div style="margin-top:8px;font-size:13px">'+esc(importMsg)+'</div>':'')+'</div></div>';
+  return h;
+}
+function vMore(){
+  return '<div style="margin-bottom:14px">'+vChores()+'</div>'+vInfo()+
+    '<div class="card" style="margin-top:14px"><h2>Backup</h2><div style="color:var(--muted);font-size:13px;margin-bottom:8px">Download everything in the Hub as a file you can keep.</div><button class="ghost" data-act="exportData">Download backup</button></div>';
+}
+
 /* ---------- actions ---------- */
 function val(id){var e=$(id);return e?e.value.trim():""}
 function del(arr,id){return state[arr].filter(function(x){return x.id!==id})}
 var actions={
+  suggestWeek:function(el){suggestDinners(el.dataset.over==="1")},
+  reloadGcal:function(){gcal.events=null;gcal.error="";render();loadGcal()},
+  reloadBring:function(){bring.items=null;bring.error="";render();loadBring()},
+  copyList:function(){
+    var t=state.shopping.filter(function(x){return !x.done}).map(function(x){return x.text}).join("\n");
+    if(!t){setStatus("Hub list is empty");return}
+    (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){setStatus("Copied "+t.split("\n").length+" items")},function(){setStatus("Couldn’t copy")});
+  },
+  saveRecipe:function(){
+    var name=val("rName");if(!name)return;
+    var ingr=($("rIngr").value||"").split("\n").map(function(x){return x.trim()}).filter(Boolean);
+    var rec={name:name,effort:+val("rEffort")||1,rating:+val("rRating")||3,ingredients:ingr,notes:val("rNotes")};
+    if(editRecipe){state.recipes.forEach(function(r){if(r.id===editRecipe){r.name=rec.name;r.effort=rec.effort;r.rating=rec.rating;r.ingredients=rec.ingredients;r.notes=rec.notes}});editRecipe=null}
+    else{rec.id=uid();rec.lastMade="";state.recipes.push(rec)}
+    changed();
+  },
+  editRecipe:function(el){editRecipe=el.dataset.id;render();window.scrollTo(0,0)},
+  cancelRecipe:function(){editRecipe=null;render()},
+  delRecipe:function(el){state.recipes=del("recipes",el.dataset.id);changed()},
+  madeToday:function(el){state.recipes.forEach(function(r){if(r.id===el.dataset.id)r.lastMade=iso(new Date())});changed()},
+  getIdeas:function(){
+    if(ideasBusy)return;ideasBusy=true;ideasErr="";render();
+    var liked=state.recipes.filter(function(r){return (r.rating||3)>=4}).map(function(r){return r.name});
+    getJson("/api/ideas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({liked:liked,all:state.recipes.map(function(r){return r.name}),staples:state.staples,rejected:state.rejected.slice(-40)})})
+      .then(function(x){ideasBusy=false;if(x.ok&&x.d.ideas){ideas=x.d.ideas;if(!ideas.length)ideasErr="No usable ideas came back. Try again."}else ideasErr=(x.d&&x.d.error)||"Could not get ideas.";render()})
+      .catch(function(){ideasBusy=false;ideasErr="Could not get ideas.";render()});
+  },
+  addIdea:function(el){
+    var x=ideas[+el.dataset.i];if(!x)return;
+    state.recipes.push({id:uid(),name:x.name,effort:x.effort,rating:3,ingredients:x.ingredients,notes:"AI idea – check before cooking",lastMade:""});
+    ideas.splice(+el.dataset.i,1);changed();
+  },
+  rejectIdea:function(el){var x=ideas[+el.dataset.i];if(!x)return;state.rejected.push(x.name);ideas.splice(+el.dataset.i,1);changed()},
+  prevSW:function(){schoolWeek=addDays(schoolWeek,-7);render()},
+  nextSW:function(){schoolWeek=addDays(schoolWeek,7);render()},
+  thisSW:function(){schoolWeek=mondayOf(new Date());render()},
+  schoolFilter:function(el){schoolFilter=el.dataset.id||"";render()},
+  addSchool:function(){
+    var t=val("schoolTitle"),who=val("schoolWho"),date=val("schoolDate");
+    if(!t||!who||!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
+    state.school.push({id:uid(),who:who,date:date,type:val("schoolType")||"homework",title:t,subject:"",done:false});
+    changed();
+  },
+  toggleSchool:function(el){state.school.forEach(function(x){if(x.id===el.dataset.id)x.done=el.checked});changed()},
+  delSchool:function(el){state.school=del("school",el.dataset.id);changed()},
+  importSchool:function(){
+    var t=val("schoolImport");if(!t)return;
+    var data;try{data=JSON.parse(t)}catch(e){importMsg="That isn’t valid JSON. Paste exactly what Claude gave you.";render();return}
+    var arr=Array.isArray(data)?data:(data&&data.items);
+    if(!Array.isArray(arr)){importMsg="No items found in that text.";render();return}
+    var added=0,dup=0,unknown={};
+    arr.forEach(function(x){
+      if(!x||!x.title||!/^\d{4}-\d{2}-\d{2}$/.test(x.date||""))return;
+      var nm=String(x.child||"").trim().toLowerCase();
+      var m=state.members.filter(function(m){return m.name.toLowerCase()===nm})[0];
+      if(!m){unknown[x.child||"(none)"]=1;return}
+      var type=["homework","activity","event"].indexOf(x.type)>=0?x.type:"homework";
+      var title=String(x.title).slice(0,200);
+      if(state.school.some(function(s){return s.who===m.id&&s.date===x.date&&s.title.toLowerCase()===title.toLowerCase()})){dup++;return}
+      state.school.push({id:uid(),who:m.id,date:x.date,type:type,title:title,subject:String(x.subject||"").slice(0,60),done:false});added++;
+    });
+    var un=Object.keys(unknown);
+    importMsg="Added "+added+(dup?", skipped "+dup+" duplicate"+(dup>1?"s":""):"")+(un.length?". Not added, unknown names (add them as family members first): "+un.join(", "):"")+".";
+    changed();
+  },
+  exportData:function(){
+    var b=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});var u=URL.createObjectURL(b);
+    var a=document.createElement("a");a.href=u;a.download="familyhub-backup-"+iso(new Date())+".json";document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(u)},1000);
+  },
   addMember:function(){var n=val("newMember");if(!n)return;state.members.push({id:uid(),name:n,color:COLORS[state.members.length%COLORS.length]});changed()},
   delMember:function(el){var id=el.dataset.id;state.members=del("members",id);state.events.forEach(function(e){if(e.who===id)e.who=""});state.chores.forEach(function(e){if(e.who===id)e.who=""});changed()},
   prevM:function(){calM--;if(calM<0){calM=11;calY--}render()},
@@ -345,12 +575,7 @@ var actions={
   prevW:function(){weekStart=addDays(weekStart,-7);render()},
   nextW:function(){weekStart=addDays(weekStart,7);render()},
   thisW:function(){weekStart=mondayOf(new Date());render()},
-  mealsToShop:function(){
-    var added=0;
-    for(var i=0;i<7;i++){var m=(state.meals[iso(addDays(weekStart,i))]||{}).d;
-      if(m&&!state.shopping.some(function(s){return s.text.toLowerCase()===("ingredients: "+m).toLowerCase()})){state.shopping.push({id:uid(),text:"Ingredients: "+m,cat:"Other",done:false});added++}}
-    changed();setStatus(added?"Added "+added+" dinner"+(added>1?"s":"")+" to the list":"No new dinners to add");
-  },
+  mealsToShop:function(){addSpecials()},
   addShop:function(){var t=val("shopText");if(!t)return;state.shopping.push({id:uid(),text:t,cat:val("shopCat")||"Other",done:false});changed()},
   toggleShop:function(el){state.shopping.forEach(function(s){if(s.id===el.dataset.id)s.done=el.checked});changed()},
   delShop:function(el){state.shopping=del("shopping",el.dataset.id);changed()},
@@ -373,6 +598,7 @@ document.addEventListener("click",function(e){
 });
 document.addEventListener("change",function(e){
   var el=e.target;
+  if(el.dataset&&el.dataset.staples){state.staples=el.value.split(/[,\n]/).map(function(x){return x.trim()}).filter(Boolean);scheduleSave();return}
   if(el.dataset&&el.dataset.act&&el.type==="checkbox"){actions[el.dataset.act](el);return}
   if(el.dataset&&el.dataset.meal){
     var p=el.dataset.meal.split("|");
@@ -383,12 +609,15 @@ document.addEventListener("change",function(e){
 });
 document.addEventListener("keydown",function(e){
   if(e.key!=="Enter"||!e.target.id)return;
-  var map={newMember:"addMember",evTitle:"addEvent",shopText:"addShop",choreText:"addChore",noteText:"addNote",cName:"addContact",cPhone:"addContact"};
+  var map={schoolTitle:"addSchool",newMember:"addMember",evTitle:"addEvent",shopText:"addShop",choreText:"addChore",noteText:"addNote",cName:"addContact",cPhone:"addContact"};
   if(map[e.target.id])actions[map[e.target.id]]();
 });
 
 renderNav();
 initStorage();
+loadGcal();loadBring();
+setInterval(function(){if(!document.hidden)loadBring()},60000);
+setInterval(function(){if(!document.hidden)loadGcal()},600000);
 })();
 </script>
 </body>
