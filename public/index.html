@@ -517,7 +517,7 @@ var editRecipe=null, schoolWeek=mondayOf(new Date()), schoolFilter="", importMsg
 var EFFORT={1:"Easy",2:"Medium",3:"Involved"};
 var MINUTES=[15,20,25,30,40,45,60,90];
 var DAYNAMES=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-var SPOND_GROUPS=[{match:"Trening 1. klasse",who:"Solvei"},{match:"Håndballtrening",who:"Ellinor"}];
+var SPOND_GROUPS=[{match:"Trening 1. klasse",who:"Solvei"},{match:"Håndballtrening",who:"Ellinor"},{match:"Trening J6",who:"Solvei"},{match:"MSSM Aspirantkorps",who:"Ellinor"},{match:"Aktivitetsserien J9",who:"Ellinor"},{match:"Miniring J6",who:"Solvei"}];
 function minutesOf(r){var m=+((r&&r.minutes)||0);if(m>=10)return m;var e=(r&&r.effort)||1;return e===1?30:(e===3?60:45)}
 
 function softRender(){var a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&$("view").contains(a))return;render()}

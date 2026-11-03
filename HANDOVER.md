@@ -29,7 +29,7 @@ Needs: calendar, meal planner, shopping list, chores, notes/contacts, and inform
 - Tabs: Today, Calendar, Dinner (dinner-only planner + recipes + AI ideas), Shopping (Bring! mirror + Hub list), School, More (chores, notes, contacts, backup).
 - Storage: `GET/PUT /api/state` against D1 table `kv` (row id `family`), client polls every 15 s and on focus; last writer wins.
 - Config: D1 binding `DB` and table `kv` exist; KV binding `SCHOOL` points at namespace `familyhub-school` (`99c2fdf65a324d1f8343aa581184f2cb`); `TEAM_DOMAIN` = `cold-dust-02c3.cloudflareaccess.com` and `POLICY_AUD` = `8ba3272a…f87d32c` are set on the Pages project; the `AI` binding exists. These were copied to the new `familien-ds` project through the Pages API; `GCAL_ICS_URL` was copied with `wrangler pages secret put`. Important: Pages Git builds ignore `[vars]`, and KV bindings from `wrangler.toml` did not apply either, so project config must be set through the API/dashboard. `BRING_EMAIL` / `BRING_PASSWORD` are not set, so Bring! returns 501.
-- Google Calendar: connected read-only via the `GCAL_ICS_URL` secret (calendar “Familien DDS”, 493 events). Every event is shown (no hidden “+ n” rows); long titles wrap, and each day plus “Open calendar” links to Google Calendar. Event rows carry boxed member initials (or 👪 for Everyone). 86 events are Spond events (tagged from `X-APPLE-CREATOR-IDENTITY: com.spond`) and show a teal **Spond** chip. Spond groups mapped so far: “Trening 1. klasse” → Solvei (`S`), “Håndballtrening” → Ellinor (`E`); other Spond groups keep the 👪 symbol.
+- Google Calendar: connected read-only via the `GCAL_ICS_URL` secret (calendar “Familien DDS”, 493 events). Every event is shown (no hidden “+ n” rows); long titles wrap, and each day plus “Open calendar” links to Google Calendar. Event rows carry boxed member initials (or 👪 for Everyone). 86 events are Spond events (tagged from `X-APPLE-CREATOR-IDENTITY: com.spond`) and show a teal **Spond** chip. Spond group mapping: Trening 1. klasse, Trening J6, Miniring J6 → Solvei (`S`); Håndballtrening, MSSM Aspirantkorps, Aktivitetsserien J9 → Ellinor (`E`). Remaining one-off events keep the 👪 symbol.
 - Calendar: the Add event form is at the top with a date field; local events use the same member badges. Member names are stripped from event titles when redundant. Day headings are orange (`--accent`); today uses blue (`--day`).
 - Week notes: school goals/reminders live in `state.weekNotes` (child, Monday date, text) and render in a narrow strip under the Today calendar and in the School tab. More → Notes is for general household notes only.
 - Live data: family members Solvei (1. trinn) and Ellinor (4. trinn); the week 45 school plan is imported (14 items) plus 3 week notes shown under the Today calendar. Ellinor is in B class, so the week 46 gym reminder is on Monday 9.11.
@@ -106,7 +106,8 @@ Recommended: **Cloudflare Pages** + **Pages Functions** + **D1** (or KV) for sha
 - [ ] Decide on Google write sync: an Apps Script bridge (Hub→Google add) or full Google OAuth (two-way).
 - [ ] Optional: auto-import ukeplan drafts with a review step; the current flow is share + reviewed import.
 - [ ] Optional: unofficial Spond API mirror if messages/RSVP are needed (fragile; not recommended).
-- [ ] Optional: assign the remaining Spond groups (3–14) to children; only “Trening 1. klasse” (Solvei) and “Håndballtrening” (Ellinor) are mapped.
+- [x] Spond groups 1–6 mapped: Trening 1. klasse, Trening J6, Miniring J6 → Solvei; Håndballtrening, MSSM Aspirantkorps, Aktivitetsserien J9 → Ellinor.
+- [ ] Optional: assign the remaining one-off Spond events (7–14) if desired.
 
 ---
 
@@ -352,3 +353,8 @@ Ask the user for the children's first names if not known; skip anything ambiguou
 - User assigned #1 `Trening 1. klasse onsdag` → Solvei and #2 `Håndballtrening` → Ellinor.
 - Added a `SPOND_GROUPS` title-substring mapping used by `cleanEvent` only when no member name is already present. Mapped Spond events get the child's initial badge but keep the activity title; the Spond chip remains. Unassigned groups keep the 👪 symbol.
 - Verified locally: Trening 1. klasse gets `S`, Håndballtrening gets `E`; other Spond events unchanged.
+
+### 2026-11-03 · Entry 37 · Spond groups 3–6 mapped
+- #3 Trening J6 → Solvei; #4 MSSM Aspirantkorps → Ellinor; #5 Aktivitetsserien J9 → Ellinor; #6 Miniring J6 → Solvei.
+- Mapping is by title substring, so it covers the MSSM “ENDRET TIDSPUNKT” variant and the trailing-space Aktivitetsserien variant.
+- Verified locally: Trening J6 and Trening 1. klasse show `S`; MSSM Aspirantkorps and Håndballtrening show `E`.
