@@ -102,6 +102,10 @@ Bring! is optional and **read-only** through its unofficial API. To mirror it, u
 
 Hub events are stored in D1 and appear in the 7-day strip alongside the Google Calendar events, with member badges. The Google side is the private iCal feed, which is **read-only**; writing Hub events into Google needs a Google OAuth app or an Apps Script bridge (not configured yet).
 
+## Spond
+
+Spond has no public API and no iCal feed for groups. It is linked indirectly: enable Spond's calendar sync on the phone to the family Google calendar, and the Hub's existing Google iCal feed picks the events up. The parser reads `X-APPLE-CREATOR-IDENTITY: com.spond` and labels them with a teal **Spond** chip. No Spond credentials are stored; RSVP and messages are not available.
+
 ## Rules
 
 - `HANDOVER.md` is the project memory: append an entry for every change and keep **Current state** and **Open items** accurate.

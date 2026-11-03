@@ -175,6 +175,7 @@ nav button{display:flex;align-items:center;gap:6px}
 .schoolmob .sitem .x{position:absolute;right:0;top:0;font-size:12px;min-width:0;min-height:0;padding:0 2px;line-height:1}
 .chip.daytag{background:#c79a1c;color:#2a2723;font-weight:600}
 .chip.daytag.weekday{background:#2f7fbf;color:#fff}
+.chip.spondchip{background:#1f9aa3;color:#fff;font-size:9px;padding:1px 5px}
 .daybtn{font-size:9.5px;line-height:1;min-width:28px;height:26px;padding:0 3px;border-radius:6px;border:1px solid var(--line);background:var(--surface2);color:var(--muted);cursor:pointer;font-weight:600}
 .daybtn.on{background:#c79a1c;color:#2a2723;border-color:#c79a1c}
 .daybtn.on.weekday{background:#2f7fbf;color:#fff;border-color:#2f7fbf}
@@ -366,7 +367,7 @@ function eventsOn(d){
 }
 function eventLi(e){
   var info=cleanEvent(e);
-  return '<li>'+whoBoxes(info.ids)+'<span class="t"><b>'+(e.time?esc(e.time)+" ":"")+'</b>'+esc(info.title)+'</span><button class="x" data-act="delEvent" data-id="'+e.id+'" title="Delete">×</button></li>';
+  return '<li>'+whoBoxes(info.ids)+'<span class="t"><b>'+(e.time?esc(e.time)+" ":"")+'</b>'+esc(info.title)+(e.source==="spond"?' <span class="chip spondchip">Spond</span>':"")+'</span><button class="x" data-act="delEvent" data-id="'+e.id+'" title="Delete">×</button></li>';
 }
 
 function weekNotesFor(week, filter){
@@ -549,7 +550,7 @@ function gcalWeek(){
     if(!list.length)h+='<div class="wev none">–</div>';
     list.forEach(function(e){
       var info=cleanEvent(e);
-      h+='<div class="wev'+(e.allDay?' all':'')+'" title="'+esc(e.title)+'">'+whoBoxes(info.ids)+' '+(e.allDay?'':'<b>'+esc(hhmm(e.start))+'</b> ')+esc(info.title)+'</div>';
+      h+='<div class="wev'+(e.allDay?' all':'')+'" title="'+esc(e.title)+'">'+whoBoxes(info.ids)+' '+(e.allDay?'':'<b>'+esc(hhmm(e.start))+'</b> ')+esc(info.title)+(e.source==="spond"?' <span class="chip spondchip">Spond</span>':"")+'</div>';
     });
     h+='</a>';
   }
@@ -566,7 +567,7 @@ function gcalWeek(){
       var mgurl="https://calendar.google.com/calendar/r/day/"+md.getFullYear()+"/"+(md.getMonth()+1)+"/"+md.getDate();
       h+='<div class="gday"><a class="gdh'+(mj2===0?' today':'')+'" href="'+mgurl+'" target="_blank" rel="noopener"><span>'+esc(md.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"}))+'</span>'+(mj2===0?'<span>Today</span>':'')+'</a>';
       if(!mlist.length)h+='<div class="empty">–</div>';
-      else h+='<ul>'+mlist.map(function(e){var info=cleanEvent(e);return '<li'+(e.allDay?' class="all"':'')+'>'+whoBoxes(info.ids)+'<b>'+(e.allDay?'All day':esc(hhmm(e.start)))+'</b><span>'+esc(info.title)+'</span></li>'}).join("")+'</ul>';
+      else h+='<ul>'+mlist.map(function(e){var info=cleanEvent(e);return '<li'+(e.allDay?' class="all"':'')+'>'+whoBoxes(info.ids)+'<b>'+(e.allDay?'All day':esc(hhmm(e.start)))+'</b><span>'+esc(info.title)+(e.source==="spond"?' <span class="chip spondchip">Spond</span>':"")+'</span></li>'}).join("")+'</ul>';
       h+='</div>';
     }
     h+='</div>';
