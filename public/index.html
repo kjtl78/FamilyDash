@@ -352,6 +352,17 @@ function cleanEvent(e){
       if(re.test(title)){ids.push(m.id);title=title.replace(re,"")}
     });
     if(ids.length)title=title.replace(/\s{2,}/g," ").replace(/^\s*[:–-]\s*/,"").trim();
+    if(!ids.length&&e.source==="spond"){
+      for(var gi=0;gi<SPOND_GROUPS.length;gi++){
+        var g=SPOND_GROUPS[gi];
+        if(title.toLowerCase().indexOf(g.match.toLowerCase())>=0){
+          for(var mi=0;mi<state.members.length;mi++){
+            if(state.members[mi].name.toLowerCase()===g.who.toLowerCase()){ids.push(state.members[mi].id);break}
+          }
+          break;
+        }
+      }
+    }
   }
   return {ids:ids,title:title};
 }
@@ -506,6 +517,7 @@ var editRecipe=null, schoolWeek=mondayOf(new Date()), schoolFilter="", importMsg
 var EFFORT={1:"Easy",2:"Medium",3:"Involved"};
 var MINUTES=[15,20,25,30,40,45,60,90];
 var DAYNAMES=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+var SPOND_GROUPS=[{match:"Trening 1. klasse",who:"Solvei"},{match:"Håndballtrening",who:"Ellinor"}];
 function minutesOf(r){var m=+((r&&r.minutes)||0);if(m>=10)return m;var e=(r&&r.effort)||1;return e===1?30:(e===3?60:45)}
 
 function softRender(){var a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&$("view").contains(a))return;render()}
